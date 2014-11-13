@@ -6,6 +6,9 @@ extern crate event;
 extern crate sdl2_window;
 extern crate shader_version;
 
+mod scene;
+mod titlescene;
+
 use event::{Events, WindowSettings};
 use conrod::UiContext;
 use sdl2_window::Sdl2Window as Window;
@@ -24,11 +27,11 @@ fn main() {
     );
     let context = UiContext::new(&Path::new("./assets/Dense-Regular.otf"), None).ok().expect("Couldn't get a graphics context!");
 
-    //let mut current_scene = connectscene::ConnectScene::new();
+    let mut current_scene = titlescene::TitleScene::new();
     for ref e in Events::new(window) {
-        /*match current_scene.handle_event(e) {
+        match current_scene.handle_event(e) {
             Some(scene) => current_scene = scene,
-                None => ()
-        };*/
+            None => ()
+        };
     }
 }
