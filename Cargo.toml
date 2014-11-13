@@ -1,0 +1,8 @@
+[package]
+
+name = "uo-data-viewer"
+version = "0.0.1"
+authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
+
+[dependencies.uo-rust-libs]
+git = "https://github.com/AngryLawyer/uo-rust-libs.git"
