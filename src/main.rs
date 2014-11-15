@@ -26,7 +26,7 @@ fn main() {
     let window = Window::new(
         opengl,
         WindowSettings {
-            title: "SuperMegaTag".to_string(),
+            title: "UO Data Viewer".to_string(),
             size: [1024, 768],
             fullscreen: false,
             exit_on_esc:true,

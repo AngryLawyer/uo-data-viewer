@@ -14,6 +14,9 @@ use conrod::{
 };
 use input::{Release, Keyboard, keyboard};
 use uorustlibs::hues::{HueReader, HueGroup, Hue};
+use uorustlibs::color::Color16;
+use uorustlibs::color::Color as ColorTrait;
+
 use std::io::IoResult;
 
 pub struct HuesScene {
@@ -79,9 +82,7 @@ impl HuesScene {
         let c = Context::abs(args.width as f64, args.height as f64);
 
         for (col_idx, &color) in hue.color_table.iter().enumerate() {
-            let r = ((color >> 10) & 0x1F) * 0xFF / 0x1F;
-            let g = ((color >> 5) & 0x1F) * 0xFF / 0x1F;
-            let b = (color & 0x1F) * 0xFF / 0x1F;
+            let (r, g, b) = color.to_tuple();
             c.rect((256.0 + 128.0) + (col_idx * 16) as f64, (32 + (index * 16)) as f64, 16.0, 16.0)
             .rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
             .draw(gl);
