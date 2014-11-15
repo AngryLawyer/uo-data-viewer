@@ -12,7 +12,8 @@ use conrod::{
     Positionable
 };
 use input::{Release, Keyboard, keyboard};
-use skillsscene::SkillsScene;
+use skills_scene::SkillsScene;
+use hues_scene::HuesScene;
 
 pub struct TitleScene;
 
@@ -24,11 +25,13 @@ impl TitleScene {
 
     fn render(&mut self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
         uic.background().color(Color::black()).draw(gl);
-        uic.label("1: skills.mul")
-            .position(0.0, 0.0)
-            .size(16u32)
-            .color(Color::white())
-            .draw(gl);
+        for (idx, &label) in["1: skills.idx + skills.mul", "2: hues.mul"].iter().enumerate() {
+            uic.label(label)
+                .position(0.0, (idx * 16) as f64)
+                .size(16u32)
+                .color(Color::white())
+                .draw(gl);
+        }
     }
 }
 
@@ -44,6 +47,9 @@ impl Scene for TitleScene {
                 match key {
                     keyboard::D1 => {
                         Some(SkillsScene::new())
+                    },
+                    keyboard::D2 => {
+                        Some(HuesScene::new())
                     },
                     _ => None
                 }

@@ -8,6 +8,7 @@ extern crate shader_version;
 extern crate opengl_graphics;
 extern crate input;
 extern crate uorustlibs;
+extern crate graphics;
 
 use event::{Events, WindowSettings};
 use conrod::UiContext;
@@ -15,8 +16,9 @@ use opengl_graphics::Gl;
 use sdl2_window::Sdl2Window as Window;
 
 mod scene;
-mod titlescene;
-mod skillsscene;
+mod title_scene;
+mod skills_scene;
+mod hues_scene;
 
 
 fn main() {
@@ -34,7 +36,7 @@ fn main() {
     let mut context = UiContext::new(&Path::new("./assets/Bretan.otf"), None).ok().expect("Couldn't get a graphics context!");
     let mut gl = Gl::new(opengl);
 
-    let mut current_scene = titlescene::TitleScene::new();
+    let mut current_scene = title_scene::TitleScene::new();
     for ref e in Events::new(window) {
         context.handle_event(e);
         match current_scene.handle_event(e, &mut context, &mut gl) {
