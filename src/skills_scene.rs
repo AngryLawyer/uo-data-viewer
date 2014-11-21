@@ -1,5 +1,5 @@
 use scene::{BoxedScene, Scene};
-use event::{Event, Render, RenderArgs, Input};
+use event::{Event, RenderArgs};
 use conrod::UiContext;
 use opengl_graphics::Gl;
 use conrod::{
@@ -57,7 +57,7 @@ impl SkillsScene {
 impl Scene for SkillsScene {
     fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
         match *e {
-            Render(args) => {
+            Event::Render(args) => {
                 self.render(args, ui_context, gl);
                 None
             },

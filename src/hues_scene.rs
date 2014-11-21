@@ -1,5 +1,5 @@
 use scene::{BoxedScene, Scene};
-use event::{Event, Render, RenderArgs, Input};
+use event::{Event, RenderArgs};
 use conrod::UiContext;
 use opengl_graphics::{Gl};
 use graphics::{Context, AddColor, Draw, AddRectangle};
@@ -101,10 +101,10 @@ impl HuesScene {
 impl Scene for HuesScene {
     fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
         match *e {
-            Render(args) => {
+            Event::Render(args) => {
                 self.render(args, ui_context, gl);
             },
-            Input(Release(Keyboard(key))) => {
+            Event::Input(Release(Keyboard(key))) => {
                 match key {
                     keyboard::Left => {
                         if self.index > 0 {
