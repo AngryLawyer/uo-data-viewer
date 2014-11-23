@@ -14,7 +14,7 @@ use conrod::{
 };
 use input::{Release, Keyboard, keyboard};
 use uorustlibs::art::{ArtReader, TileOrStatic, Art};
-use uorustlibs::color::Color16;
+use uorustlibs::color::{Color16, Color32};
 use uorustlibs::color::Color as ColorTrait;
 use image::{GenericImage, ImageBuf, Rgba};
 
@@ -36,7 +36,10 @@ impl TileScene {
                     TileOrStatic::Static(tile) => panic!("LOL")
                 };
                 let (width, height, data) = tile.to_32bit();
-                ImageBuf::from_pixels(data, width, height)
+                ImageBuf::from_fn(width, height, |x, y| {
+                    let (r, g, b, a) = data[((x % height) + (y * width)) as uint].to_rgba();
+                    Rgba(r, g, b, a)
+                })
             }
             _ => ImageBuf::new(44, 44)
         };
