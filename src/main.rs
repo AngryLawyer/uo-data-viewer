@@ -9,6 +9,7 @@ extern crate opengl_graphics;
 extern crate input;
 extern crate uorustlibs;
 extern crate graphics;
+extern crate image;
 
 use event::{Events, WindowSettings};
 use conrod::UiContext;
@@ -19,6 +20,7 @@ mod scene;
 mod title_scene;
 mod skills_scene;
 mod hues_scene;
+mod tile_scene;
 
 
 fn main() {

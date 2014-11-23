@@ -14,6 +14,7 @@ use conrod::{
 use input::{Release, Keyboard, keyboard};
 use skills_scene::SkillsScene;
 use hues_scene::HuesScene;
+use tile_scene::TileScene;
 
 pub struct TitleScene;
 
@@ -25,7 +26,7 @@ impl TitleScene {
 
     fn render(&mut self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
         uic.background().color(Color::black()).draw(gl);
-        for (idx, &label) in["1: skills.idx + skills.mul", "2: hues.mul"].iter().enumerate() {
+        for (idx, &label) in["1: skills.idx + skills.mul", "2: hues.mul", "3: art.mul (tiles)"].iter().enumerate() {
             uic.label(label)
                 .position(0.0, (idx * 16) as f64)
                 .size(16u32)
@@ -50,6 +51,9 @@ impl Scene for TitleScene {
                     },
                     keyboard::D2 => {
                         Some(HuesScene::new())
+                    },
+                    keyboard::D3 => {
+                        Some(TileScene::new())
                     },
                     _ => None
                 }
