@@ -54,6 +54,32 @@ impl TileScene {
         scene
     }
 
+    fn create_slice(&mut self, reader: &mut ArtReader) {
+        let max_x = 18;
+        let max_y = 13;
+        let limit = max_x * max_y;
+        let idx = 0;
+        let start = limit * idx;
+
+        for x in range(0, max_x) {
+            for y in range(0, max_y) {
+                let maybe_tile = reader.read((x % max_y) + (y * max_x));
+                match maybe_tile {
+                    Ok(TileOrStatic::Tile(tile)) => {
+                        let (width, height, data) = tile.to_32bit();
+                        let buf = ImageBuf::from_fn(width, height, |x, y| {
+                            let (r, g, b, a) = data[((x % height) + (y * width)) as uint].to_rgba();
+                            Rgba(r, g, b, a)
+                        });
+                        let texture = Texture::new(0, 44, 44);
+                    },
+                    _ => ()
+                }
+            }
+        }
+
+    }
+
     fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
         uic.background().color(Color::black()).draw(gl);
         let c = Context::abs(args.width as f64, args.height as f64);
