@@ -21,6 +21,9 @@ use image::imageops::overlay;
 
 use std::io::IoResult;
 
+static MAX_X:u32 = 18;
+static MAX_Y:u32 = 10;
+
 
 pub struct TileScene {
     reader: IoResult<ArtReader>,
@@ -44,15 +47,13 @@ impl TileScene {
     fn create_slice(&mut self) {
         match self.reader {
             Ok(ref mut reader) => {
-                let max_x = 18;
-                let max_y = 13;
-                let limit = max_x * max_y;
+                let limit = MAX_X * MAX_Y;
                 let start = limit * self.index;
-                let mut dest = ImageBuf::new(800, 600);
+                let mut dest = ImageBuf::new(1024, 768);
 
-                for x in range(0, max_x) {
-                    for y in range(0, max_y) {
-                        let maybe_tile = reader.read(start + x + (y * max_x));
+                for x in range(0, MAX_X) {
+                    for y in range(0, MAX_Y) {
+                        let maybe_tile = reader.read(start + x + (y * MAX_X));
                         match maybe_tile {
                             Ok(TileOrStatic::Tile(tile)) => {
                                 let (width, height, data) = tile.to_32bit();
@@ -60,7 +61,7 @@ impl TileScene {
                                     let (r, g, b, a) = data[((x % height) + (y * width)) as uint].to_rgba();
                                     Rgba(r, g, b, a)
                                 });
-                                overlay(&mut dest, &buf, 44 * x, 44 * y)
+                                overlay(&mut dest, &buf, 44 * x, (44 + 16) * y)
                             },
                             _ => ()
                         }
@@ -77,11 +78,19 @@ impl TileScene {
 
 
     fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
+        let limit = MAX_X * MAX_Y;
+        let start = limit * self.index;
         uic.background().color(Color::black()).draw(gl);
         let c = Context::abs(args.width as f64, args.height as f64);
         match self.texture {
             Some(ref texture) => {
                 c.image(texture).draw(gl);
+                for x in range(0, MAX_X) {
+                    for y in range(0, MAX_Y) {
+                        let index = start + x + (y * MAX_X);
+                        self.draw_label(uic, gl, format!("{}", index).as_slice(), (44 * x) as f64, (((44 + 16) * y) + 44) as f64)
+                    }
+                }
             },
             None => ()
         }

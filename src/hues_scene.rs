@@ -89,13 +89,6 @@ impl HuesScene {
         }
     }
 
-    fn draw_label(&self, uic: &mut UiContext, gl: &mut Gl, label: &str, x: f64, y: f64) {
-        uic.label(label)
-            .position(x, y)
-            .size(16u32)
-            .color(Color::white())
-            .draw(gl);
-    }
 }
 
 impl Scene for HuesScene {
