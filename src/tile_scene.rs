@@ -8,15 +8,11 @@ use conrod::{
     Color,
     Colorable,
     Drawable,
-    Label,
-    Labelable,
-    Positionable
 };
 use input::{Release, Keyboard, keyboard};
-use uorustlibs::art::{ArtReader, TileOrStatic, Art};
-use uorustlibs::color::{Color16, Color32};
+use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::color::Color as ColorTrait;
-use image::{GenericImage, ImageBuf, Rgba,};
+use image::{ImageBuf, Rgba};
 use image::imageops::overlay;
 
 use std::io::IoResult;
@@ -33,7 +29,7 @@ pub struct TileScene {
 
 impl TileScene {
     pub fn new() -> BoxedScene {
-        let mut reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
+        let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let mut scene = box TileScene {
             reader: reader,
             index: 0,
@@ -53,9 +49,9 @@ impl TileScene {
 
                 for x in range(0, MAX_X) {
                     for y in range(0, MAX_Y) {
-                        let maybe_tile = reader.read(start + x + (y * MAX_X));
+                        let maybe_tile = reader.read_tile(start + x + (y * MAX_X));
                         match maybe_tile {
-                            Ok(TileOrStatic::Tile(tile)) => {
+                            Ok(tile) => {
                                 let (width, height, data) = tile.to_32bit();
                                 let buf = ImageBuf::from_fn(width, height, |x, y| {
                                     let (r, g, b, a) = data[((x % height) + (y * width)) as uint].to_rgba();
