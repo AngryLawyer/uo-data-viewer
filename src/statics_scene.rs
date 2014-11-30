@@ -17,8 +17,8 @@ use image::imageops::overlay;
 
 use std::io::IoResult;
 
-static MAX_X:u32 = 18;
-static MAX_Y:u32 = 10;
+static MAX_X:u32 = 8;
+static MAX_Y:u32 = 5;
 
 
 pub struct StaticsScene {
@@ -46,29 +46,22 @@ impl StaticsScene {
                 let limit = MAX_X * MAX_Y;
                 let start = limit * self.index;
                 let mut dest = ImageBuf::new(1024, 768);
-                let maybe_tile = reader.read_static(0);
-                match maybe_tile {
-                    Ok(tile) => println!("OK"),
-                    Err(e) => println!("{}", e)
-                }
-                //println!("{}", maybe_tile);
-                /*for x in range(0, MAX_X) {
+                for x in range(0, MAX_X) {
                     for y in range(0, MAX_Y) {
-                        let maybe_tile = reader.read_tile(start + x + (y * MAX_X));
-                        match maybe_tile {
-                            Ok(tile) => {
-                                let (width, height, data) = tile.to_32bit();
+                        let maybe_static = reader.read_static(start + x + (y * MAX_X));
+                        match maybe_static {
+                            Ok(stat) => {
+                                let (width, height, data) = stat.to_32bit();
                                 let buf = ImageBuf::from_fn(width, height, |x, y| {
                                     let (r, g, b, a) = data[((x % height) + (y * width)) as uint].to_rgba();
                                     Rgba(r, g, b, a)
                                 });
-                                overlay(&mut dest, &buf, 44 * x, (44 + 16) * y)
+                                overlay(&mut dest, &buf, 128 * x, (128 + 16) * y)
                             },
                             _ => ()
                         }
                     }
-                }*/
-
+                }
                 self.texture = Some(Texture::from_image(&dest))
             },
             Err(_) => {

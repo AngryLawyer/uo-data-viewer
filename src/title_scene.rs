@@ -27,11 +27,7 @@ impl TitleScene {
     fn render(&mut self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
         uic.background().color(Color::black()).draw(gl);
         for (idx, &label) in["1: skills.idx + skills.mul", "2: hues.mul", "3: art.mul (tiles)", "4: art.mul (statics)"].iter().enumerate() {
-            uic.label(label)
-                .position(0.0, (idx * 16) as f64)
-                .size(16u32)
-                .color(Color::white())
-                .draw(gl);
+            self.draw_label(uic, gl, label, 0.0, (idx * 16) as f64);
         }
     }
 }
