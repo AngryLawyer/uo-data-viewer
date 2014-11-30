@@ -12,8 +12,9 @@ extern crate graphics;
 extern crate image;
 
 use event::{Events, WindowSettings};
-use conrod::UiContext;
+use conrod::{UiContext, Theme};
 use opengl_graphics::Gl;
+use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window as Window;
 
 mod scene;
@@ -21,6 +22,7 @@ mod title_scene;
 mod skills_scene;
 mod hues_scene;
 mod tile_scene;
+mod statics_scene;
 
 
 fn main() {
@@ -35,7 +37,11 @@ fn main() {
             samples: 4,
         }
     );
-    let mut context = UiContext::new(&Path::new("./assets/Bretan.otf"), None).ok().expect("Couldn't get a graphics context!");
+   
+    let font_path = Path::new("./assets/Bretan.otf");
+    let theme = Theme::default();
+    let glyph_cache = GlyphCache::new(&font_path).unwrap();
+    let mut context = UiContext::new(glyph_cache, theme);
     let mut gl = Gl::new(opengl);
 
     let mut current_scene = title_scene::TitleScene::new();
