@@ -43,6 +43,7 @@ fn main() {
     let glyph_cache = GlyphCache::new(&font_path).unwrap();
     let mut context = UiContext::new(glyph_cache, theme);
     let mut gl = Gl::new(opengl);
+    gl.enable_alpha_blend();
 
     let mut current_scene = title_scene::TitleScene::new();
     for ref e in Events::new(window) {
