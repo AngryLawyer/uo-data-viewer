@@ -11,7 +11,6 @@ use conrod::{
     Labelable,
     Positionable
 };
-use input::{Release, Keyboard, keyboard};
 use uorustlibs::skills::Skills;
 use std::io::IoResult;
 
@@ -26,7 +25,8 @@ impl SkillsScene {
         }
     }
 
-    fn render(&mut self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
+    fn render(&mut self, _args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
+        gl.enable_alpha_blend();
         uic.background().color(Color::black()).draw(gl);
         match self.skills {
             Ok(ref skills) => {

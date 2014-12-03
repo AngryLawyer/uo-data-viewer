@@ -9,7 +9,7 @@ use conrod::{
     Colorable,
     Drawable,
 };
-use input::{Release, Keyboard, keyboard};
+use input::{InputEvent, Button, keyboard};
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::color::Color as ColorTrait;
 use image::{ImageBuf, Rgba};
@@ -99,7 +99,7 @@ impl Scene for TileScene {
             Event::Render(args) => {
                 self.render(args, ui_context, gl);
             },
-            Event::Input(Release(Keyboard(key))) => {
+            Event::Input(InputEvent::Release(Button::Keyboard(key))) => {
                 match key {
                     keyboard::Left => {
                         if self.index > 0 {

@@ -21,12 +21,12 @@ mod scene;
 mod title_scene;
 mod skills_scene;
 mod hues_scene;
-mod tile_scene;
-mod statics_scene;
+/*mod tile_scene;
+mod statics_scene;*/
 
 
 fn main() {
-    let opengl = shader_version::opengl::OpenGL_3_2;
+    let opengl = shader_version::opengl::OpenGL::OpenGL_3_2;
     let window = Window::new(
         opengl,
         WindowSettings {
@@ -43,7 +43,6 @@ fn main() {
     let glyph_cache = GlyphCache::new(&font_path).unwrap();
     let mut context = UiContext::new(glyph_cache, theme);
     let mut gl = Gl::new(opengl);
-    gl.enable_alpha_blend();
 
     let mut current_scene = title_scene::TitleScene::new();
     for ref e in Events::new(window) {
