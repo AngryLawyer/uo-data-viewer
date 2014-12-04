@@ -12,8 +12,8 @@ use input::{InputEvent, Button};
 use input::keyboard::Key;
 use skills_scene::SkillsScene;
 use hues_scene::HuesScene;
-/*use tile_scene::TileScene;
-use statics_scene::StaticsScene;*/
+use tile_scene::TileScene;
+use statics_scene::StaticsScene;
 
 pub struct TitleScene;
 
@@ -23,7 +23,6 @@ impl TitleScene {
     }
 
     fn render(&mut self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
-        gl.enable_alpha_blend();
         uic.background().color(Color::black()).draw(gl);
         gl.draw([0, 0, args.width as i32, args.height as i32], |_c , gl| {
             for (idx, &label) in["1: skills.idx + skills.mul", "2: hues.mul", "3: art.mul (tiles)", "4: art.mul (statics)"].iter().enumerate() {
@@ -49,12 +48,12 @@ impl Scene for TitleScene {
                     Key::D2 => {
                         Some(HuesScene::new())
                     },
-                    /*keyboard::D3 => {
+                    Key::D3 => {
                         Some(TileScene::new())
                     },
-                    keyboard::D4 => {
+                    Key::D4 => {
                         Some(StaticsScene::new())
-                    },*/
+                    },
                     _ => None
                 }
             },

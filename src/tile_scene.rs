@@ -2,14 +2,15 @@ use scene::{BoxedScene, Scene};
 use event::{Event, RenderArgs};
 use conrod::UiContext;
 use opengl_graphics::{Gl, Texture};
-use graphics::{Context, AddImage, Draw};
+use graphics::image;
 use conrod::{
     Background,
     Color,
     Colorable,
     Drawable,
 };
-use input::{InputEvent, Button, keyboard};
+use input::{InputEvent, Button};
+use input::keyboard::Key;
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::color::Color as ColorTrait;
 use image::{ImageBuf, Rgba};
@@ -74,22 +75,23 @@ impl TileScene {
 
 
     fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
-        let limit = MAX_X * MAX_Y;
-        let start = limit * self.index;
-        uic.background().color(Color::black()).draw(gl);
-        let c = Context::abs(args.width as f64, args.height as f64);
-        match self.texture {
-            Some(ref texture) => {
-                c.image(texture).draw(gl);
-                for x in range(0, MAX_X) {
-                    for y in range(0, MAX_Y) {
-                        let index = start + x + (y * MAX_X);
-                        self.draw_label(uic, gl, format!("{}", index).as_slice(), (44 * x) as f64, (((44 + 16) * y) + 44) as f64)
+        gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+            let limit = MAX_X * MAX_Y;
+            let start = limit * self.index;
+            uic.background().color(Color::black()).draw(gl);
+            match self.texture {
+                Some(ref texture) => {
+                    image(texture, &c, gl);
+                    for x in range(0, MAX_X) {
+                        for y in range(0, MAX_Y) {
+                            let index = start + x + (y * MAX_X);
+                            self.draw_label(uic, gl, format!("{}", index).as_slice(), (44 * x) as f64, (((44 + 16) * y) + 44) as f64)
+                        }
                     }
-                }
-            },
-            None => ()
-        }
+                },
+                None => ()
+            }
+        });
     }
 }
 
@@ -101,13 +103,13 @@ impl Scene for TileScene {
             },
             Event::Input(InputEvent::Release(Button::Keyboard(key))) => {
                 match key {
-                    keyboard::Left => {
+                    Key::Left => {
                         if self.index > 0 {
                             self.index -= 1;
                             self.create_slice();
                         }
                     },
-                    keyboard::Right => {
+                    Key::Right => {
                         self.index += 1;
                         self.create_slice();
                     },

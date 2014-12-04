@@ -21,8 +21,8 @@ mod scene;
 mod title_scene;
 mod skills_scene;
 mod hues_scene;
-/*mod tile_scene;
-mod statics_scene;*/
+mod tile_scene;
+mod statics_scene;
 
 
 fn main() {
@@ -47,6 +47,7 @@ fn main() {
     let mut current_scene = title_scene::TitleScene::new();
     for ref e in Events::new(window) {
         context.handle_event(e);
+        gl.enable_alpha_blend();
         match current_scene.handle_event(e, &mut context, &mut gl) {
             Some(scene) => current_scene = scene,
             None => ()

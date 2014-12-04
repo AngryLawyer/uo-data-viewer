@@ -43,18 +43,17 @@ impl HuesScene {
     }
 
     fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
-        gl.enable_alpha_blend();
         uic.background().color(Color::black()).draw(gl);
-        match self.reader {
-            Ok(ref _hue_reader) => {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+        gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+            match self.reader {
+                Ok(ref _hue_reader) => {
                     self.render_hue_group(args, uic, gl, &c)
-                });
-            },
-            Err(ref error) => {
-                self.draw_label(uic, gl, format!("{}", error).as_slice(), 0.0, 16.0);
-            }
-        };
+                },
+                Err(ref error) => {
+                    self.draw_label(uic, gl, format!("{}", error).as_slice(), 0.0, 0.0);
+                }
+            };
+        });
     }
 
     fn render_hue_group(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl, c: &Context) {
