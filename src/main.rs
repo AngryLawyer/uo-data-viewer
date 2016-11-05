@@ -1,56 +1,41 @@
-#![feature(phase)]
-
-#[phase(plugin, link)]
-extern crate conrod;
-extern crate event;
-extern crate sdl2_window;
-extern crate shader_version;
-extern crate opengl_graphics;
-extern crate input;
-extern crate uorustlibs;
-extern crate graphics;
-extern crate image;
-
-use event::{Events, WindowSettings};
-use conrod::{UiContext, Theme};
-use opengl_graphics::Gl;
-use opengl_graphics::glyph_cache::GlyphCache;
-use sdl2_window::Sdl2Window as Window;
+extern crate sdl2;
+extern crate sdl2_ttf;
 
 mod scene;
 mod title_scene;
-mod skills_scene;
-mod hues_scene;
-mod tile_scene;
-mod statics_scene;
 
+use std::path::Path;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 
-fn main() {
-    let opengl = shader_version::opengl::OpenGL::OpenGL_3_2;
-    let window = Window::new(
-        opengl,
-        WindowSettings {
-            title: "UO Data Viewer".to_string(),
-            size: [1024, 768],
-            fullscreen: false,
-            exit_on_esc:true,
-            samples: 4,
-        }
-    );
-   
+pub fn main() {
+    let sdl_context = sdl2::init().unwrap();
+    let video_subsystem = sdl_context.video().unwrap();
+    let ttf_subsystem = sdl2_ttf::init().unwrap();
+
+    let window = video_subsystem.window("UO Data Viewer", 1024, 768)
+        .position_centered()
+        .opengl()
+        .build()
+        .unwrap();
+
+    let mut renderer = window.renderer().build().unwrap();
     let font_path = Path::new("./assets/Bretan.otf");
-    let theme = Theme::default();
-    let glyph_cache = GlyphCache::new(&font_path).unwrap();
-    let mut context = UiContext::new(glyph_cache, theme);
-    let mut gl = Gl::new(opengl);
+    let font = ttf_subsystem.load_font(font_path, 24).unwrap();
 
-    let mut current_scene = title_scene::TitleScene::new();
-    for ref e in Events::new(window) {
-        context.handle_event(e);
-        gl.enable_alpha_blend();
-        match current_scene.handle_event(e, &mut context, &mut gl) {
-            Some(scene) => current_scene = scene,
-            None => ()
-        };
+    let mut event_pump = sdl_context.event_pump().unwrap();
+    let scene = Box::new(title_scene::TitleScene::new(&font, &mut renderer));
+
+    'running: loop {
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                    break 'running
+                },
+                _ => {}
+            }
+        }
+        // The rest of the game loop goes here...
+        scene.render(&mut renderer);
     }
 }
