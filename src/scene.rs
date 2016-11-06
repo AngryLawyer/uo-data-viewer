@@ -3,4 +3,5 @@ pub type BoxedScene = Box<Scene + 'static>;
 
 pub trait Scene {
     fn render(&self, renderer: &mut Renderer);
+    fn handle_event(&self);
 }

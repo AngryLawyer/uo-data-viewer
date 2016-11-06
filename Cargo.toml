@@ -10,3 +10,6 @@ sdl2_ttf = "0.25.0"
 
 [dependencies.uo-rust-libs]
 git = "https://github.com/AngryLawyer/uo-rust-libs.git"
+
+[dependencies.sdl2-engine-helpers]
+git = "https://github.com/AngryLawyer/rust-sdl2-engine-helpers.git"

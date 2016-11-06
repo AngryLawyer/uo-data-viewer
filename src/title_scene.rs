@@ -28,4 +28,7 @@ impl Scene for TitleScene {
         renderer.copy(&self.text, None, Some(target)).unwrap();
         renderer.present();
     }
+
+    fn handle_event(&self) {
+    }
 }

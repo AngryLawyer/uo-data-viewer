@@ -1,5 +1,6 @@
 extern crate sdl2;
 extern crate sdl2_ttf;
+extern crate sdl2_engine_helpers;
 
 mod scene;
 mod title_scene;
@@ -7,6 +8,7 @@ mod title_scene;
 use std::path::Path;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2_engine_helpers::game_loop::GameLoop;
 
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
@@ -26,16 +28,18 @@ pub fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let scene = Box::new(title_scene::TitleScene::new(&font, &mut renderer));
 
-    'running: loop {
+    let mut game_loop = GameLoop::new(30);
+    game_loop.run(|frame| {
+        let mut ended = false;
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                    break 'running
+                    ended = true
                 },
                 _ => {}
             }
         }
-        // The rest of the game loop goes here...
         scene.render(&mut renderer);
-    }
+        ended
+    });
 }
