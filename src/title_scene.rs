@@ -2,6 +2,8 @@ use scene::{Scene, BoxedScene};
 use sdl2::pixels::Color;
 use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 use sdl2_ttf::Font;
 
 pub struct TitleScene {
@@ -12,9 +14,9 @@ impl TitleScene {
     pub fn new(font: &Font, renderer: &mut Renderer) -> BoxedScene {
         let surface = font.render("1. ").blended(Color::RGBA(255, 255, 255, 255)).unwrap();
         let texture = renderer.create_texture_from_surface(&surface).unwrap();
-        
+
         Box::new(TitleScene {
-           text: texture 
+           text: texture
         })
     }
 }
@@ -29,6 +31,12 @@ impl Scene for TitleScene {
         renderer.present();
     }
 
-    fn handle_event(&self) {
+    fn handle_event(&self, event: &Event) {
+         match *event {
+            Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
+                println!("1");
+            },
+             _ => ()
+         };
     }
 }

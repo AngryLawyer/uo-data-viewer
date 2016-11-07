@@ -36,7 +36,7 @@ pub fn main() {
                 Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     ended = true
                 },
-                _ => {}
+                _ => scene.handle_event(&event)
             }
         }
         scene.render(&mut renderer);
