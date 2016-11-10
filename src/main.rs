@@ -26,7 +26,9 @@ pub fn main() {
     let font = ttf_subsystem.load_font(font_path, 24).unwrap();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
-    let scene = Box::new(title_scene::TitleScene::new(&font, &mut renderer));
+    let mut scene_stack = scene::SceneStack::new();
+    let scene = title_scene::TitleScene::new(&font, &mut renderer);
+    scene_stack.push(scene);
 
     let mut game_loop = GameLoop::new(30);
     game_loop.run(|frame| {
@@ -36,10 +38,10 @@ pub fn main() {
                 Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     ended = true
                 },
-                _ => scene.handle_event(&event)
+                _ => scene_stack.handle_event(&event)
             }
         }
-        scene.render(&mut renderer);
+        scene_stack.render(&mut renderer);
         ended
     });
 }
