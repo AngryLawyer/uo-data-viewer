@@ -1,35 +1,45 @@
 use sdl2::render::{Renderer};
 use sdl2::event::Event;
-pub type BoxedScene = Box<Scene + 'static>;
+pub type BoxedScene<T> = Box<Scene<T> + 'static>;
 
-pub trait Scene {
+pub trait Scene<T> {
     fn render(&self, renderer: &mut Renderer);
-    fn handle_event(&self, event: &Event);
+    fn handle_event(&self, event: &Event) -> Option<SceneChangeEvent<T>>;
 }
 
-pub struct SceneStack {
-    scenes: Vec<BoxedScene>
+pub enum SceneChangeEvent<T> {
+    PushScene(T),
+    SwapScene(T),
+    PopScene,
 }
 
-impl SceneStack {
+pub struct SceneStack<T> {
+    scenes: Vec<BoxedScene<T>>
+}
 
-    pub fn new() -> SceneStack {
+impl<T> SceneStack<T> {
+
+    pub fn new() -> SceneStack<T> {
         SceneStack {
             scenes: vec![]
         }
     }
 
-    pub fn push(&mut self, scene: BoxedScene) {
+    pub fn is_empty(&self) -> bool {
+        self.scenes.len() == 0
+    }
+
+    pub fn push(&mut self, scene: BoxedScene<T>) {
         self.scenes.push(scene)
     }
 
-    pub fn swap(&mut self, scene: BoxedScene) -> Option<BoxedScene> {
+    pub fn swap(&mut self, scene: BoxedScene<T>) -> Option<BoxedScene<T>> {
         let old_scene = self.scenes.pop();
         self.scenes.push(scene);
         old_scene
     }
 
-    pub fn pop(&mut self) -> Option<BoxedScene> {
+    pub fn pop(&mut self) -> Option<BoxedScene<T>> {
         self.scenes.pop()
     }
 
@@ -44,14 +54,15 @@ impl SceneStack {
         }
     }
 
-    pub fn handle_event(&mut self, event: &Event) {
+    pub fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<T>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(scene) => {
-                scene.handle_event(event);
+                let event = scene.handle_event(event);
                 self.scenes.push(scene);
+                event
             },
-            None => ()
+            None => None
         }
     }
 }

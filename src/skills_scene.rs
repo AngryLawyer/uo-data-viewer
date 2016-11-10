@@ -1,31 +1,26 @@
 use scene::{BoxedScene, Scene};
-use event::{Event, RenderArgs};
-use conrod::UiContext;
-use opengl_graphics::Gl;
-use conrod::{
-    Background,
-    Color,
-    Colorable,
-    Drawable,
-    Label,
-    Labelable,
-    Positionable
-};
+use std::io::Result;
+use std::path::Path;
 use uorustlibs::skills::Skills;
-use std::io::IoResult;
+
+use sdl2::render::{Renderer, Texture, TextureQuery};
+use sdl2::rect::Rect;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
+use sdl2_ttf::Font;
 
 pub struct SkillsScene {
-    skills: IoResult<Skills>
+    skills: Result<Skills>
 }
 
 impl SkillsScene {
     pub fn new() -> BoxedScene {
-        box SkillsScene {
+        Box::new(SkillsScene {
             skills: Skills::new(&Path::new("./assets/skills.idx"), &Path::new("./assets/skills.mul"))
-        }
+        })
     }
 
-    fn render(&mut self, _args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
+    /*fn render(&mut self, _args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
         gl.enable_alpha_blend();
         uic.background().color(Color::black()).draw(gl);
         match self.skills {
@@ -51,11 +46,11 @@ impl SkillsScene {
                     .draw(gl);
             }
         }
-    }
+    }*/
 }
 
 impl Scene for SkillsScene {
-    fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
+    /*fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
         match *e {
             Event::Render(args) => {
                 self.render(args, ui_context, gl);
@@ -63,5 +58,22 @@ impl Scene for SkillsScene {
             },
             _ => None
         }
+    }*/
+
+    fn render(&self, renderer: &mut Renderer) {
+        /*let TextureQuery {width, height, .. } = self.text.query();
+        let target = Rect::new(0, 0, width, height);
+        renderer.clear();
+        renderer.copy(&self.text, None, Some(target)).unwrap();
+        renderer.present();*/
+    }
+
+    fn handle_event(&self, event: &Event) {
+         match *event {
+            Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
+                println!("2");
+            },
+             _ => ()
+         };
     }
 }

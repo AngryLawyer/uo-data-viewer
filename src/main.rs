@@ -1,9 +1,11 @@
 extern crate sdl2;
 extern crate sdl2_ttf;
 extern crate sdl2_engine_helpers;
+extern crate uorustlibs;
 
 mod scene;
 mod title_scene;
+//mod skills_scene;
 
 use std::path::Path;
 use sdl2::event::Event;
@@ -26,7 +28,7 @@ pub fn main() {
     let font = ttf_subsystem.load_font(font_path, 24).unwrap();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
-    let mut scene_stack = scene::SceneStack::new();
+    let mut scene_stack = scene::SceneStack::<u32>::new();
     let scene = title_scene::TitleScene::new(&font, &mut renderer);
     scene_stack.push(scene);
 
@@ -35,13 +37,21 @@ pub fn main() {
         let mut ended = false;
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                Event::Quit {..}  => {
                     ended = true
                 },
-                _ => scene_stack.handle_event(&event)
+                _ => {
+                    let scene_event = scene_stack.handle_event(&event);
+                    match scene_event {
+                        Some(scene::SceneChangeEvent::PopScene) => {
+                            scene_stack.pop();
+                        },
+                        _ => ()
+                    }
+                }
             }
         }
         scene_stack.render(&mut renderer);
-        ended
+        ended || scene_stack.is_empty()
     });
 }
