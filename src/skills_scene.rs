@@ -53,7 +53,7 @@ impl<T> Scene<T> for SkillsScene {
             let TextureQuery {width, height, .. } = page.query();
             let target = Rect::new(last_width, 0, width, height);
             renderer.copy(page, None, Some(target)).unwrap();
-            last_width += width;
+            last_width += width as i32;
         }
         renderer.present();
     }
