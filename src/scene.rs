@@ -7,6 +7,11 @@ pub trait Scene<T> {
     fn handle_event(&self, event: &Event) -> Option<SceneChangeEvent<T>>;
 }
 
+pub enum SceneName {
+    TitleScene,
+    SkillsScene, 
+}
+
 pub enum SceneChangeEvent<T> {
     PushScene(T),
     SwapScene(T),

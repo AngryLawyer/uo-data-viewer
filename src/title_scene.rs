@@ -1,4 +1,5 @@
-use scene::{Scene, BoxedScene, SceneChangeEvent};
+use scene::{Scene, BoxedScene, SceneChangeEvent, SceneName};
+use text_renderer::TextRenderer;
 use sdl2::pixels::Color;
 use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
@@ -7,21 +8,18 @@ use sdl2::keyboard::Keycode;
 use sdl2_ttf::Font;
 
 pub struct TitleScene {
-    pub text: Texture
+    text: Texture
 }
 
 impl TitleScene {
-    pub fn new<T>(font: &Font, renderer: &mut Renderer) -> BoxedScene<T> {
-        let surface = font.render("1. ").blended(Color::RGBA(255, 255, 255, 255)).unwrap();
-        let texture = renderer.create_texture_from_surface(&surface).unwrap();
-
+    pub fn new(text_renderer: &TextRenderer, renderer: &mut Renderer) -> BoxedScene<SceneName> {
         Box::new(TitleScene {
-           text: texture
+           text: text_renderer.create_text(renderer, "1.\n2.", Color::RGBA(255, 255, 255, 255))
         })
     }
 }
 
-impl<T> Scene<T> for TitleScene {
+impl Scene<SceneName> for TitleScene {
 
     fn render(&self, renderer: &mut Renderer) {
         let TextureQuery {width, height, .. } = self.text.query();
@@ -31,14 +29,13 @@ impl<T> Scene<T> for TitleScene {
         renderer.present();
     }
 
-    fn handle_event(&self, event: &Event) -> Option<SceneChangeEvent<T>> {
+    fn handle_event(&self, event: &Event) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
             },
             Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
-                println!("1");
-                None
+                Some(SceneChangeEvent::PushScene(SceneName::SkillsScene))
             },
              _ => None
         }
