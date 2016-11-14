@@ -3,6 +3,7 @@ extern crate sdl2_ttf;
 extern crate sdl2_engine_helpers;
 extern crate uorustlibs;
 
+mod engine;
 mod scene;
 mod title_scene;
 mod skills_scene;
