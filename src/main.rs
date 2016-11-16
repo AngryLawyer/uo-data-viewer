@@ -15,17 +15,6 @@ use sdl2::keyboard::Keycode;
 use sdl2::render::Renderer;
 use sdl2_engine_helpers::game_loop::GameLoop;
 
-pub fn make_scene(scene: scene::SceneName, text_renderer: &text_renderer::TextRenderer, renderer: &mut Renderer) -> scene::BoxedScene<scene::SceneName> {
-    match scene {
-        scene::SceneName::TitleScene => {
-            title_scene::TitleScene::new(text_renderer, renderer)
-        },
-        scene::SceneName::SkillsScene => {
-            skills_scene::SkillsScene::new(text_renderer, renderer)
-        },
-    }
-}
-
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -46,34 +35,13 @@ pub fn main() {
     let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&text_renderer, &mut renderer));
 
     engine.run(|scene, renderer| {
-    }, &mut renderer);
-
-    /*game_loop.run(|frame| {
-        let mut ended = false;
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..}  => {
-                    ended = true
-                },
-                _ => {
-                    let scene_event = scene_stack.handle_event(&event);
-                    match scene_event {
-                        Some(scene::SceneChangeEvent::PopScene) => {
-                            scene_stack.pop();
-                        },
-                        Some(scene::SceneChangeEvent::PushScene(scene)) => {
-                            scene_stack.push(make_scene(scene, &text_renderer, &mut renderer))
-                        },
-                        Some(scene::SceneChangeEvent::SwapScene(scene)) => {
-                            scene_stack.pop();
-                            scene_stack.push(make_scene(scene, &text_renderer, &mut renderer))
-                        },
-                        _ => ()
-                    }
-                }
-            }
+        match scene {
+            scene::SceneName::TitleScene => {
+                title_scene::TitleScene::new(&text_renderer, renderer)
+            },
+            scene::SceneName::SkillsScene => {
+                skills_scene::SkillsScene::new(&text_renderer, renderer)
+            },
         }
-        scene_stack.render(&mut renderer);
-        ended || scene_stack.is_empty()
-    });*/
+    }, &mut renderer);
 }
