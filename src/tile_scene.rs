@@ -1,48 +1,39 @@
-use scene::{BoxedScene, Scene};
-use event::{Event, RenderArgs};
-use conrod::UiContext;
-use opengl_graphics::{Gl, Texture};
-use graphics::image;
-use conrod::{
-    Background,
-    Color,
-    Colorable,
-    Drawable,
-};
-use input::{InputEvent, Button};
-use input::keyboard::Key;
-use uorustlibs::art::{ArtReader, Art};
-use uorustlibs::color::Color as ColorTrait;
-use image::{ImageBuf, Rgba};
-use image::imageops::overlay;
+use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use text_renderer::TextRenderer;
+use sdl2::pixels::Color;
+use std::io::Result;
+use std::path::Path;
+use uorustlibs::art::ArtReader;
 
-use std::io::IoResult;
+use sdl2::render::{Renderer, Texture, TextureQuery};
+use sdl2::rect::Rect;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 
 static MAX_X:u32 = 18;
 static MAX_Y:u32 = 10;
 
-
 pub struct TileScene {
-    reader: IoResult<ArtReader>,
+    reader: Result<ArtReader>,
     index: u32,
     texture: Option<Texture>
 }
 
 impl TileScene {
-    pub fn new() -> BoxedScene {
+    pub fn new() -> BoxedScene<SceneName> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
-        let mut scene = box TileScene {
+        let mut scene = Box::new(TileScene {
             reader: reader,
             index: 0,
             texture: None
-        };
+        });
         scene.create_slice();
 
         scene
     }
 
     fn create_slice(&mut self) {
-        match self.reader {
+        /*match self.reader {
             Ok(ref mut reader) => {
                 let limit = MAX_X * MAX_Y;
                 let start = limit * self.index;
@@ -70,11 +61,11 @@ impl TileScene {
             Err(_) => {
                 self.texture = None
             }
-        }
+        }*/
     }
 
 
-    fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
+    /*fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
         gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
             let limit = MAX_X * MAX_Y;
             let start = limit * self.index;
@@ -92,11 +83,40 @@ impl TileScene {
                 None => ()
             }
         });
-    }
+    }*/
 }
 
-impl Scene for TileScene {
-    fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
+impl Scene<SceneName> for TileScene {
+    fn render(&self, renderer: &mut Renderer) {
+        /*let TextureQuery {width, height, .. } = self.text.query();
+        let target = Rect::new(0, 0, width, height);
+        */
+        renderer.clear();
+        //renderer.copy(&self.text, None, Some(target)).unwrap();
+        renderer.present();
+    }
+
+    fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<SceneName>> {
+        match *event {
+            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                Some(SceneChangeEvent::PopScene)
+            },
+            Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
+                if self.index > 0 {
+                    self.index -= 1;
+                    self.create_slice();
+                }
+                None
+            },
+            Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
+                self.index += 1;
+                self.create_slice();
+                None
+            },
+             _ => None
+        }
+    }
+    /*fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
         match *e {
             Event::Render(args) => {
                 self.render(args, ui_context, gl);
@@ -119,5 +139,5 @@ impl Scene for TileScene {
             _ => ()
         };
         None
-    }
+    }*/
 }

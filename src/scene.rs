@@ -4,12 +4,13 @@ pub type BoxedScene<T> = Box<Scene<T> + 'static>;
 
 pub trait Scene<T> {
     fn render(&self, renderer: &mut Renderer);
-    fn handle_event(&self, event: &Event) -> Option<SceneChangeEvent<T>>;
+    fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<T>>;
 }
 
 pub enum SceneName {
     TitleScene,
-    SkillsScene, 
+    SkillsScene,
+    TileScene,
 }
 
 pub enum SceneChangeEvent<T> {
@@ -62,7 +63,7 @@ impl<T> SceneStack<T> {
     pub fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<T>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
-            Some(scene) => {
+            Some(mut scene) => {
                 let event = scene.handle_event(event);
                 self.scenes.push(scene);
                 event

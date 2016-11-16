@@ -7,13 +7,10 @@ mod engine;
 mod scene;
 mod title_scene;
 mod skills_scene;
+mod tile_scene;
 mod text_renderer;
 
 use std::path::Path;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::render::Renderer;
-use sdl2_engine_helpers::game_loop::GameLoop;
 
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
@@ -31,7 +28,7 @@ pub fn main() {
     let font = ttf_subsystem.load_font(font_path, 16).unwrap();
     let text_renderer = text_renderer::TextRenderer::new(font);
 
-    let mut event_pump = sdl_context.event_pump().unwrap();
+    let event_pump = sdl_context.event_pump().unwrap();
     let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&text_renderer, &mut renderer));
 
     engine.run(|scene, renderer| {
@@ -41,6 +38,9 @@ pub fn main() {
             },
             scene::SceneName::SkillsScene => {
                 skills_scene::SkillsScene::new(&text_renderer, renderer)
+            },
+            scene::SceneName::TileScene => {
+                tile_scene::TileScene::new()
             },
         }
     }, &mut renderer);

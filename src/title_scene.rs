@@ -14,7 +14,7 @@ pub struct TitleScene {
 impl TitleScene {
     pub fn new(text_renderer: &TextRenderer, renderer: &mut Renderer) -> BoxedScene<SceneName> {
         Box::new(TitleScene {
-           text: text_renderer.create_text(renderer, "1.\n2.", Color::RGBA(255, 255, 255, 255))
+           text: text_renderer.create_text(renderer, "1. Skills Scene\n2. Tile Scene", Color::RGBA(255, 255, 255, 255))
         })
     }
 }
@@ -29,13 +29,16 @@ impl Scene<SceneName> for TitleScene {
         renderer.present();
     }
 
-    fn handle_event(&self, event: &Event) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
             },
             Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
                 Some(SceneChangeEvent::PushScene(SceneName::SkillsScene))
+            },
+            Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
+                Some(SceneChangeEvent::PushScene(SceneName::TileScene))
             },
              _ => None
         }
