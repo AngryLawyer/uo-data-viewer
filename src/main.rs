@@ -45,6 +45,9 @@ pub fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&text_renderer, &mut renderer));
 
+    engine.run(|scene, renderer| {
+    }, &mut renderer);
+
     /*game_loop.run(|frame| {
         let mut ended = false;
         for event in event_pump.poll_iter() {
