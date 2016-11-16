@@ -62,10 +62,6 @@ impl<T> Scene<T> for SkillsScene {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
             },
-            Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
-                println!("2");
-                None
-            },
              _ => None
         }
     }
