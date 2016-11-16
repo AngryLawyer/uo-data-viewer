@@ -43,12 +43,9 @@ pub fn main() {
     let text_renderer = text_renderer::TextRenderer::new(font);
 
     let mut event_pump = sdl_context.event_pump().unwrap();
-    let mut scene_stack = scene::SceneStack::<scene::SceneName>::new();
-    let scene = title_scene::TitleScene::new(&text_renderer, &mut renderer);
-    scene_stack.push(scene);
+    let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&text_renderer, &mut renderer));
 
-    let mut game_loop = GameLoop::new(30);
-    game_loop.run(|frame| {
+    /*game_loop.run(|frame| {
         let mut ended = false;
         for event in event_pump.poll_iter() {
             match event {
@@ -75,5 +72,5 @@ pub fn main() {
         }
         scene_stack.render(&mut renderer);
         ended || scene_stack.is_empty()
-    });
+    });*/
 }
