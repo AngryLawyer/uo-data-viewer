@@ -1,10 +1,10 @@
 use sdl2::render::{Renderer};
 use sdl2::event::Event;
-pub type BoxedScene<T> = Box<Scene<T> + 'static>;
+pub type BoxedScene<SceneChangeParamsT> = Box<Scene<SceneChangeParamsT> + 'static>;
 
-pub trait Scene<T> {
+pub trait Scene<SceneChangeParamsT> {
     fn render(&self, renderer: &mut Renderer);
-    fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<T>>;
+    fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
 }
 
 pub enum SceneName {
@@ -19,13 +19,13 @@ pub enum SceneChangeEvent<T> {
     PopScene,
 }
 
-pub struct SceneStack<T> {
-    scenes: Vec<BoxedScene<T>>
+pub struct SceneStack<SceneChangeParamsT> {
+    scenes: Vec<BoxedScene<SceneChangeParamsT>>
 }
 
-impl<T> SceneStack<T> {
+impl<SceneChangeParamsT> SceneStack<SceneChangeParamsT> {
 
-    pub fn new() -> SceneStack<T> {
+    pub fn new() -> SceneStack<SceneChangeParamsT> {
         SceneStack {
             scenes: vec![]
         }
@@ -35,17 +35,17 @@ impl<T> SceneStack<T> {
         self.scenes.len() == 0
     }
 
-    pub fn push(&mut self, scene: BoxedScene<T>) {
+    pub fn push(&mut self, scene: BoxedScene<SceneChangeParamsT>) {
         self.scenes.push(scene)
     }
 
-    pub fn swap(&mut self, scene: BoxedScene<T>) -> Option<BoxedScene<T>> {
+    pub fn swap(&mut self, scene: BoxedScene<SceneChangeParamsT>) -> Option<BoxedScene<SceneChangeParamsT>> {
         let old_scene = self.scenes.pop();
         self.scenes.push(scene);
         old_scene
     }
 
-    pub fn pop(&mut self) -> Option<BoxedScene<T>> {
+    pub fn pop(&mut self) -> Option<BoxedScene<SceneChangeParamsT>> {
         self.scenes.pop()
     }
 
@@ -60,7 +60,7 @@ impl<T> SceneStack<T> {
         }
     }
 
-    pub fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<T>> {
+    pub fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {

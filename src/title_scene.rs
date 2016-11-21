@@ -14,7 +14,7 @@ pub struct TitleScene {
 impl TitleScene {
     pub fn new(text_renderer: &TextRenderer, renderer: &mut Renderer) -> BoxedScene<SceneName> {
         Box::new(TitleScene {
-           text: text_renderer.create_text(renderer, "1. Skills Scene\n2. Tile Scene", Color::RGBA(255, 255, 255, 255))
+           text: text_renderer.create_text_texture(renderer, "1. Skills Scene\n2. Tile Scene", Color::RGBA(255, 255, 255, 255))
         })
     }
 }

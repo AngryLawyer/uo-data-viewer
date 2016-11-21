@@ -26,7 +26,7 @@ pub fn main() {
     let mut renderer = window.renderer().build().unwrap();
     let font_path = Path::new("./assets/Bretan.otf");
     let font = ttf_subsystem.load_font(font_path, 16).unwrap();
-    let text_renderer = text_renderer::TextRenderer::new(font);
+    let text_renderer = text_renderer::TextRenderer::new(&font);
 
     let event_pump = sdl_context.event_pump().unwrap();
     let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&text_renderer, &mut renderer));

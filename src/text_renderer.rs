@@ -7,20 +7,18 @@ use sdl2::keyboard::Keycode;
 use sdl2::surface::Surface;
 use sdl2_ttf::Font;
 
-
 pub struct TextRenderer<'a> {
-    font: Font<'a>
+    font: &'a Font<'a>
 }
 
 impl<'a> TextRenderer<'a> {
-    pub fn new(font: Font) -> TextRenderer {
+    pub fn new(font: &'a Font) -> TextRenderer<'a> {
         TextRenderer {
             font: font
         }
     }
 
-    pub fn create_text(&self, renderer: &mut Renderer, text: &str, color: Color) -> Texture {
-        //TODO: Multiline text
+    pub fn create_text(&self, text: &str, color: Color) -> Surface {
         let mut xy = (0, 0);
         for line in text.lines() {
             let (width, height) = self.font.size_of(line).unwrap();
@@ -36,6 +34,11 @@ impl<'a> TextRenderer<'a> {
             s.blit(None, &mut surface, Some(Rect::new(0, (idx * s.height()) as i32, s.width(), s.height()))).unwrap();
             idx += 1;
         }
+        surface
+    }
+
+    pub fn create_text_texture(&self, renderer: &mut Renderer, text: &str, color: Color) -> Texture {
+        let surface = self.create_text(text, color);
         renderer.create_texture_from_surface(&surface).unwrap()
     }
 }

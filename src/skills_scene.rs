@@ -28,13 +28,13 @@ impl SkillsScene {
                         };
                         format!("{} {}", glyph, skill.name)
                     }).collect();
-                    text_renderer.create_text(renderer, &skills.join("\n"), Color::RGBA(255, 255, 255, 255))
+                    text_renderer.create_text_texture(renderer, &skills.join("\n"), Color::RGBA(255, 255, 255, 255))
                 }).collect();
                 items
             },
             Err(error) => {
                 let text = format!("{}", error);
-                let texture = text_renderer.create_text(renderer, &text, Color::RGBA(255, 255, 255, 255));
+                let texture = text_renderer.create_text_texture(renderer, &text, Color::RGBA(255, 255, 255, 255));
                 vec![texture]
             }
         };

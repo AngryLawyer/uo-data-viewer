@@ -16,7 +16,7 @@ static MAX_Y:u32 = 10;
 pub struct TileScene {
     reader: Result<ArtReader>,
     index: u32,
-    texture: Option<Texture>
+    texture: Option<Texture>,
 }
 
 impl TileScene {
@@ -25,7 +25,7 @@ impl TileScene {
         let mut scene = Box::new(TileScene {
             reader: reader,
             index: 0,
-            texture: None
+            texture: None,
         });
         scene.create_slice();
 
