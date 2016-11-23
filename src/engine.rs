@@ -5,6 +5,9 @@ use scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2_engine_helpers::game_loop::GameLoop;
 
 
+// TODO: Move EngineData into its own hoojama
+pub struct EngineData {}
+
 pub struct Engine<SceneChangeParamsT, EngineDataT> {
     game_loop: GameLoop,
     event_pump: Option<EventPump>,

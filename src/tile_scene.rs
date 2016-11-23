@@ -1,4 +1,5 @@
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use engine::EngineData;
 use text_renderer::TextRenderer;
 use sdl2::pixels::Color;
 use std::io::Result;
@@ -20,7 +21,7 @@ pub struct TileScene {
 }
 
 impl TileScene {
-    pub fn new() -> BoxedScene<SceneName> {
+    pub fn new() -> BoxedScene<SceneName, EngineData> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let mut scene = Box::new(TileScene {
             reader: reader,
@@ -86,8 +87,8 @@ impl TileScene {
     }*/
 }
 
-impl Scene<SceneName> for TileScene {
-    fn render(&self, renderer: &mut Renderer) {
+impl Scene<SceneName, EngineData> for TileScene {
+    fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
         /*let TextureQuery {width, height, .. } = self.text.query();
         let target = Rect::new(0, 0, width, height);
         */
@@ -96,7 +97,7 @@ impl Scene<SceneName> for TileScene {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
