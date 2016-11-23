@@ -5,14 +5,14 @@ use scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2_engine_helpers::game_loop::GameLoop;
 
 
-pub struct Engine<T> {
+pub struct Engine<SceneChangeParamsT, EngineDataT> {
     game_loop: GameLoop,
     event_pump: Option<EventPump>,
-    scene_stack: Option<SceneStack<T>>,
+    scene_stack: Option<SceneStack<SceneChangeParamsT, EngineDataT>>,
 }
 
-impl<T> Engine<T> {
-    pub fn new(fps: u32, event_pump: EventPump, initial_scene: BoxedScene<T>) -> Engine<T> {
+impl<SceneChangeParamsT, EngineDataT> Engine<SceneChangeParamsT, EngineDataT> {
+    pub fn new(fps: u32, event_pump: EventPump, initial_scene: BoxedScene<SceneChangeParamsT, EngineDataT>) -> Engine<SceneChangeParamsT, EngineDataT> {
         let mut scene_stack = SceneStack::new();
         scene_stack.push(initial_scene);
         Engine {
@@ -22,8 +22,8 @@ impl<T> Engine<T> {
         }
     }
 
-    pub fn run<F>(&mut self, mut scenebuilder: F, renderer: &mut Renderer)
-        where F: FnMut(T, &mut Renderer) -> BoxedScene<T> {
+    pub fn run<F>(&mut self, mut scenebuilder: F, engine_data: &mut EngineDataT, renderer: &mut Renderer)
+        where F: FnMut(SceneChangeParamsT, &mut EngineDataT, &mut Renderer) -> BoxedScene<SceneChangeParamsT, EngineDataT> {
         let mut event_pump = self.event_pump.take().unwrap();
         let mut scene_stack = self.scene_stack.take().unwrap();
         self.game_loop.run(|frame| {
@@ -40,11 +40,11 @@ impl<T> Engine<T> {
                                 scene_stack.pop();
                             },
                             Some(SceneChangeEvent::PushScene(scene)) => {
-                                scene_stack.push(scenebuilder(scene, renderer))
+                                scene_stack.push(scenebuilder(scene, engine_data, renderer))
                             },
                             Some(SceneChangeEvent::SwapScene(scene)) => {
                                 scene_stack.pop();
-                                scene_stack.push(scenebuilder(scene, renderer))
+                                scene_stack.push(scenebuilder(scene, engine_data, renderer))
                             },
                             _ => ()
                         }
