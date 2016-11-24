@@ -29,16 +29,16 @@ pub fn main() {
     let text_renderer = text_renderer::TextRenderer::new(&font);
 
     let event_pump = sdl_context.event_pump().unwrap();
-    let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&text_renderer, &mut renderer));
-    let mut engine_data = engine::EngineData::new();
+    let mut engine_data = engine::EngineData::new(text_renderer);
+    let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&mut renderer, &mut engine_data));
 
     engine.run(|scene, renderer, engine_data| {
         match scene {
             scene::SceneName::TitleScene => {
-                title_scene::TitleScene::new(&text_renderer, renderer)
+                title_scene::TitleScene::new(renderer, engine_data)
             },
             scene::SceneName::SkillsScene => {
-                skills_scene::SkillsScene::new(&text_renderer, renderer)
+                skills_scene::SkillsScene::new(renderer, engine_data)
             },
             scene::SceneName::TileScene => {
                 tile_scene::TileScene::new()

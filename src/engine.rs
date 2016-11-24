@@ -6,12 +6,14 @@ use sdl2_engine_helpers::game_loop::GameLoop;
 
 use text_renderer::TextRenderer;
 // TODO: Move EngineData into its own hoojama
-pub struct EngineData {
+pub struct EngineData<'a> {
+    pub text_renderer: TextRenderer<'a>
 }
 
-impl EngineData {
-    pub fn new() -> EngineData {
+impl<'a> EngineData<'a> {
+    pub fn new(text_renderer: TextRenderer<'a>) -> EngineData<'a> {
         EngineData {
+            text_renderer: text_renderer
         }
     }
 }

@@ -16,7 +16,7 @@ pub struct SkillsScene {
 }
 
 impl SkillsScene {
-    pub fn new(text_renderer: &TextRenderer, renderer: &mut Renderer) -> BoxedScene<SceneName, EngineData> {
+    pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let skills = Skills::new(&Path::new("./assets/skills.idx"), &Path::new("./assets/skills.mul"));
         let text = match skills {
             Ok(skills) => {
@@ -29,13 +29,13 @@ impl SkillsScene {
                         };
                         format!("{} {}", glyph, skill.name)
                     }).collect();
-                    text_renderer.create_text_texture(renderer, &skills.join("\n"), Color::RGBA(255, 255, 255, 255))
+                    engine_data.text_renderer.create_text_texture(renderer, &skills.join("\n"), Color::RGBA(255, 255, 255, 255))
                 }).collect();
                 items
             },
             Err(error) => {
                 let text = format!("{}", error);
-                let texture = text_renderer.create_text_texture(renderer, &text, Color::RGBA(255, 255, 255, 255));
+                let texture = engine_data.text_renderer.create_text_texture(renderer, &text, Color::RGBA(255, 255, 255, 255));
                 vec![texture]
             }
         };

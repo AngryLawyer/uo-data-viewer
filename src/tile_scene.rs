@@ -21,7 +21,7 @@ pub struct TileScene {
 }
 
 impl TileScene {
-    pub fn new() -> BoxedScene<SceneName, EngineData> {
+    pub fn new<'a>() -> BoxedScene<SceneName, EngineData<'a>> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let mut scene = Box::new(TileScene {
             reader: reader,
@@ -87,7 +87,7 @@ impl TileScene {
     }*/
 }
 
-impl Scene<SceneName, EngineData> for TileScene {
+impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
     fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
         /*let TextureQuery {width, height, .. } = self.text.query();
         let target = Rect::new(0, 0, width, height);
