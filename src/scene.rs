@@ -49,22 +49,22 @@ impl<SceneChangeParamsT, EngineDataT> SceneStack<SceneChangeParamsT, EngineDataT
         self.scenes.pop()
     }
 
-    pub fn render(&mut self, engine_data: &mut EngineDataT, renderer: &mut Renderer) {
+    pub fn render(&mut self, renderer: &mut Renderer, engine_data: &mut EngineDataT) {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(scene) => {
-                scene.render(engine_data, renderer);
+                scene.render(renderer, engine_data);
                 self.scenes.push(scene);
             },
             None => ()
         }
     }
 
-    pub fn handle_event(&mut self, engine_data: &mut EngineDataT, event: &Event) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
+    pub fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                let event = scene.handle_event(engine_data, event);
+                let event = scene.handle_event(event, engine_data);
                 self.scenes.push(scene);
                 event
             },

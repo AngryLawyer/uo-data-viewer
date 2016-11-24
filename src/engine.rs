@@ -4,9 +4,17 @@ use sdl2::render::Renderer;
 use scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2_engine_helpers::game_loop::GameLoop;
 
-
+use text_renderer::TextRenderer;
 // TODO: Move EngineData into its own hoojama
-pub struct EngineData {}
+pub struct EngineData {
+}
+
+impl EngineData {
+    pub fn new() -> EngineData {
+        EngineData {
+        }
+    }
+}
 
 pub struct Engine<SceneChangeParamsT, EngineDataT> {
     game_loop: GameLoop,
@@ -25,8 +33,8 @@ impl<SceneChangeParamsT, EngineDataT> Engine<SceneChangeParamsT, EngineDataT> {
         }
     }
 
-    pub fn run<F>(&mut self, mut scenebuilder: F, engine_data: &mut EngineDataT, renderer: &mut Renderer)
-        where F: FnMut(SceneChangeParamsT, &mut EngineDataT, &mut Renderer) -> BoxedScene<SceneChangeParamsT, EngineDataT> {
+    pub fn run<F>(&mut self, mut scenebuilder: F, renderer: &mut Renderer, engine_data: &mut EngineDataT)
+        where F: FnMut(SceneChangeParamsT, &mut Renderer, &mut EngineDataT) -> BoxedScene<SceneChangeParamsT, EngineDataT> {
         let mut event_pump = self.event_pump.take().unwrap();
         let mut scene_stack = self.scene_stack.take().unwrap();
         self.game_loop.run(|frame| {
@@ -37,24 +45,24 @@ impl<SceneChangeParamsT, EngineDataT> Engine<SceneChangeParamsT, EngineDataT> {
                         ended = true
                     },
                     _ => {
-                        let scene_event = scene_stack.handle_event(&event);
+                        let scene_event = scene_stack.handle_event(&event, engine_data);
                         match scene_event {
                             Some(SceneChangeEvent::PopScene) => {
                                 scene_stack.pop();
                             },
                             Some(SceneChangeEvent::PushScene(scene)) => {
-                                scene_stack.push(scenebuilder(scene, engine_data, renderer))
+                                scene_stack.push(scenebuilder(scene, renderer, engine_data))
                             },
                             Some(SceneChangeEvent::SwapScene(scene)) => {
                                 scene_stack.pop();
-                                scene_stack.push(scenebuilder(scene, engine_data, renderer))
+                                scene_stack.push(scenebuilder(scene, renderer, engine_data))
                             },
                             _ => ()
                         }
                     }
                 }
             }
-            scene_stack.render(renderer);
+            scene_stack.render(renderer, engine_data);
             ended || scene_stack.is_empty()
         });
         self.event_pump = Some(event_pump);

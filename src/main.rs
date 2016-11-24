@@ -30,8 +30,9 @@ pub fn main() {
 
     let event_pump = sdl_context.event_pump().unwrap();
     let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&text_renderer, &mut renderer));
+    let mut engine_data = engine::EngineData::new();
 
-    engine.run(|scene, renderer| {
+    engine.run(|scene, renderer, engine_data| {
         match scene {
             scene::SceneName::TitleScene => {
                 title_scene::TitleScene::new(&text_renderer, renderer)
@@ -43,5 +44,5 @@ pub fn main() {
                 tile_scene::TileScene::new()
             },
         }
-    }, &mut renderer);
+    }, &mut renderer, &mut engine_data);
 }
