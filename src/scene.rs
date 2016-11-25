@@ -4,7 +4,7 @@ pub type BoxedScene<SceneChangeParamsT, EngineDataT> = Box<Scene<SceneChangePara
 
 pub trait Scene<SceneChangeParamsT, EngineDataT> {
     fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineDataT);
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
+    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
 }
 
 pub enum SceneName {
@@ -60,11 +60,11 @@ impl<SceneChangeParamsT, EngineDataT> SceneStack<SceneChangeParamsT, EngineDataT
         }
     }
 
-    pub fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
+    pub fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                let event = scene.handle_event(event, engine_data);
+                let event = scene.handle_event(event, renderer, engine_data);
                 self.scenes.push(scene);
                 event
             },

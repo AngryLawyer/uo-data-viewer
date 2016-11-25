@@ -47,7 +47,7 @@ impl<SceneChangeParamsT, EngineDataT> Engine<SceneChangeParamsT, EngineDataT> {
                         ended = true
                     },
                     _ => {
-                        let scene_event = scene_stack.handle_event(&event, engine_data);
+                        let scene_event = scene_stack.handle_event(&event, renderer, engine_data);
                         match scene_event {
                             Some(SceneChangeEvent::PopScene) => {
                                 scene_stack.pop();

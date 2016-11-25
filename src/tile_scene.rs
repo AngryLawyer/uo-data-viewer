@@ -21,19 +21,19 @@ pub struct TileScene {
 }
 
 impl TileScene {
-    pub fn new<'a>() -> BoxedScene<SceneName, EngineData<'a>> {
+    pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let mut scene = Box::new(TileScene {
             reader: reader,
             index: 0,
             texture: None,
         });
-        scene.create_slice();
+        scene.create_slice(renderer, engine_data);
 
         scene
     }
 
-    fn create_slice(&mut self) {
+    fn create_slice(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
         /*match self.reader {
             Ok(ref mut reader) => {
                 let limit = MAX_X * MAX_Y;
@@ -97,7 +97,7 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
@@ -105,13 +105,13 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
                 if self.index > 0 {
                     self.index -= 1;
-                    self.create_slice();
+                    self.create_slice(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
                 self.index += 1;
-                self.create_slice();
+                self.create_slice(renderer, engine_data);
                 None
             },
              _ => None

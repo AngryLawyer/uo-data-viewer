@@ -41,7 +41,7 @@ pub fn main() {
                 skills_scene::SkillsScene::new(renderer, engine_data)
             },
             scene::SceneName::TileScene => {
-                tile_scene::TileScene::new()
+                tile_scene::TileScene::new(renderer, engine_data)
             },
         }
     }, &mut renderer, &mut engine_data);

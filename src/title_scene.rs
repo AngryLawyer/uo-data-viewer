@@ -30,7 +30,7 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TitleScene {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
