@@ -54,10 +54,10 @@ impl TileScene {
                                     for (i, cell) in data.iter().enumerate() {
                                         let (r, g, b, a) = cell.to_rgba();
                                         let offset = i * 4;
-                                        bitmap[offset] = 255;
-                                        bitmap[offset + 1] = 255;
-                                        bitmap[offset + 2] = 255;
-                                        bitmap[offset + 3] = 255;
+                                        bitmap[offset] = a;
+                                        bitmap[offset + 1] = b;
+                                        bitmap[offset + 2] = g;
+                                        bitmap[offset + 3] = r;
                                     }
                                 });
                                 surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, width, height)));
