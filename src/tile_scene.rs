@@ -1,17 +1,19 @@
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use engine::EngineData;
 use text_renderer::TextRenderer;
-use sdl2::pixels::Color;
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::surface::Surface;
 use std::io::Result;
 use std::path::Path;
-use uorustlibs::art::ArtReader;
+use uorustlibs::art::{ArtReader, Art};
+use uorustlibs::color::Color as UOColor;
 
 use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
-static MAX_X:u32 = 18;
+static MAX_X:u32 = 20;
 static MAX_Y:u32 = 10;
 
 pub struct TileScene {
@@ -34,35 +36,43 @@ impl TileScene {
     }
 
     fn create_slice(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
-        /*match self.reader {
+        match self.reader {
             Ok(ref mut reader) => {
                 let limit = MAX_X * MAX_Y;
                 let start = limit * self.index;
-                let mut dest = ImageBuf::new(1024, 768);
+                let mut dest = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+                dest.fill_rect(None, Color::RGB(0, 0, 0)).unwrap();
 
-                for x in range(0, MAX_X) {
-                    for y in range(0, MAX_Y) {
+                for x in 0..MAX_X {
+                    for y in 0..MAX_Y {
                         let maybe_tile = reader.read_tile(start + x + (y * MAX_X));
                         match maybe_tile {
                             Ok(tile) => {
                                 let (width, height, data) = tile.to_32bit();
-                                let buf = ImageBuf::from_fn(width, height, |x, y| {
-                                    let (r, g, b, a) = data[((x % height) + (y * width)) as uint].to_rgba();
-                                    Rgba(r, g, b, a)
+                                let mut surface = Surface::new(width, height, PixelFormatEnum::RGBA8888).unwrap();
+                                surface.with_lock_mut(|bitmap| {
+                                    for (i, cell) in data.iter().enumerate() {
+                                        let (r, g, b, a) = cell.to_rgba();
+                                        let offset = i * 4;
+                                        bitmap[offset] = 255;
+                                        bitmap[offset + 1] = 255;
+                                        bitmap[offset + 2] = 255;
+                                        bitmap[offset + 3] = 255;
+                                    }
                                 });
-                                overlay(&mut dest, &buf, 44 * x, (44 + 16) * y)
+                                surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, width, height)));
                             },
                             _ => ()
                         }
                     }
                 }
 
-                self.texture = Some(Texture::from_image(&dest))
+                self.texture = Some(renderer.create_texture_from_surface(&dest).unwrap());
             },
             Err(_) => {
                 self.texture = None
             }
-        }*/
+        }
     }
 
 
@@ -93,7 +103,12 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
         let target = Rect::new(0, 0, width, height);
         */
         renderer.clear();
-        //renderer.copy(&self.text, None, Some(target)).unwrap();
+        match self.texture {
+            Some(ref texture) => {
+                renderer.copy(texture, None, None).unwrap();
+            },
+            None => ()
+        };
         renderer.present();
     }
 
