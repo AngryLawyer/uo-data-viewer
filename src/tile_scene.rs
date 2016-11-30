@@ -48,7 +48,7 @@ impl TileScene {
                         let maybe_tile = reader.read_tile(start + x + (y * MAX_X));
                         match maybe_tile {
                             Ok(tile) => {
-                                let (width, height, data) = tile.to_32bit();
+                                /*let (width, height, data) = tile.to_32bit();
                                 let mut surface = Surface::new(width, height, PixelFormatEnum::RGBA8888).unwrap();
                                 surface.with_lock_mut(|bitmap| {
                                     for (i, cell) in data.iter().enumerate() {
@@ -59,8 +59,9 @@ impl TileScene {
                                         bitmap[offset + 2] = g;
                                         bitmap[offset + 3] = r;
                                     }
-                                });
-                                surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, width, height)));
+                                });*/
+                                let surface = tile.to_surface();
+                                surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, 44, 44)));
                             },
                             _ => ()
                         }
