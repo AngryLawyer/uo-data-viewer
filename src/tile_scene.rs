@@ -6,7 +6,6 @@ use sdl2::surface::Surface;
 use std::io::Result;
 use std::path::Path;
 use uorustlibs::art::{ArtReader, Art};
-use uorustlibs::color::Color as UOColor;
 
 use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
@@ -71,9 +70,6 @@ impl TileScene {
 
 impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
     fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
-        /*let TextureQuery {width, height, .. } = self.text.query();
-        let target = Rect::new(0, 0, width, height);
-        */
         renderer.clear();
         match self.texture {
             Some(ref texture) => {
@@ -104,28 +100,4 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
              _ => None
         }
     }
-    /*fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
-        match *e {
-            Event::Render(args) => {
-                self.render(args, ui_context, gl);
-            },
-            Event::Input(InputEvent::Release(Button::Keyboard(key))) => {
-                match key {
-                    Key::Left => {
-                        if self.index > 0 {
-                            self.index -= 1;
-                            self.create_slice();
-                        }
-                    },
-                    Key::Right => {
-                        self.index += 1;
-                        self.create_slice();
-                    },
-                    _ => ()
-                }
-            },
-            _ => ()
-        };
-        None
-    }*/
 }

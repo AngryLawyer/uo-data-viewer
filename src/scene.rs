@@ -7,10 +7,12 @@ pub trait Scene<SceneChangeParamsT, EngineDataT> {
     fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
 }
 
+// FIXME: This should live elsewhere
 pub enum SceneName {
     TitleScene,
     SkillsScene,
     TileScene,
+    StaticsScene
 }
 
 pub enum SceneChangeEvent<T> {

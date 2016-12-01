@@ -1,121 +1,105 @@
-use scene::{BoxedScene, Scene};
-use event::{Event, RenderArgs};
-use conrod::UiContext;
-use opengl_graphics::{Gl, Texture};
-use graphics::image;
-use conrod::{
-    Background,
-    Color,
-    Colorable,
-    Drawable,
-};
-use input::{InputEvent, Button};
-use input::keyboard::Key;
+use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use engine::EngineData;
+use text_renderer::TextRenderer;
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::surface::Surface;
+use std::io::Result;
+use std::path::Path;
 use uorustlibs::art::{ArtReader, Art};
-use uorustlibs::color::Color as ColorTrait;
-use image::{ImageBuf, Rgba};
-use image::imageops::overlay;
 
-use std::io::IoResult;
+use sdl2::render::{Renderer, Texture, TextureQuery};
+use sdl2::rect::Rect;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 
 static MAX_X:u32 = 8;
 static MAX_Y:u32 = 4;
 
 
 pub struct StaticsScene {
-    reader: IoResult<ArtReader>,
+    reader: Result<ArtReader>,
     index: u32,
     texture: Option<Texture>
 }
 
 impl StaticsScene {
-    pub fn new() -> BoxedScene {
+    pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
-        let mut scene = box StaticsScene {
+        let mut scene = Box::new(StaticsScene {
             reader: reader,
             index: 0,
             texture: None
-        };
-        scene.create_slice();
+        });
+        scene.create_slice(renderer, engine_data);
 
         scene
     }
 
-    fn create_slice(&mut self) {
+    fn create_slice(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+
         match self.reader {
             Ok(ref mut reader) => {
                 let limit = MAX_X * MAX_Y;
                 let start = limit * self.index;
-                let mut dest = ImageBuf::new(1024, 768);
-                for x in range(0, MAX_X) {
-                    for y in range(0, MAX_Y) {
-                        let maybe_static = reader.read_static(start + x + (y * MAX_X));
+                let mut dest = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+                dest.fill_rect(None, Color::RGB(0, 0, 0)).unwrap();
+
+                for x in 0..MAX_X {
+                    for y in 0..MAX_Y {
+                        let index = start + x + (y * MAX_X);
+                        let maybe_static = reader.read_static(index);
                         match maybe_static {
                             Ok(stat) => {
-                                let (width, height, data) = stat.to_32bit();
-                                let buf = ImageBuf::from_fn(width, height, |x, y| {
-                                    let (r, g, b, a) = data[((x % height) + (y * width)) as uint].to_rgba();
-                                    Rgba(r, g, b, a)
-                                });
-                                overlay(&mut dest, &buf, 128 * x, (128 + 16) * y)
+                                let surface = stat.to_surface();
+                                surface.blit(None, &mut dest, Some(Rect::new(128 * x as i32, (128 + 16) * y as i32, surface.width(), surface.height())));
                             },
                             _ => ()
                         }
+                        let label = engine_data.text_renderer.create_text(&format!("{}", index), Color::RGBA(255, 255, 255, 255));
+                        label.blit(None, &mut dest, Some(Rect::new(128 * x as i32, ((128 + 16) * y as i32) + 128, label.width(), label.height())));
                     }
                 }
-                self.texture = Some(Texture::from_image(&dest))
+
+                self.texture = Some(renderer.create_texture_from_surface(&dest).unwrap());
             },
             Err(_) => {
-                self.texture = None
+                let texture = engine_data.text_renderer.create_text_texture(renderer, "Could not create slice", Color::RGBA(255, 255, 255, 255));
+                self.texture = Some(texture);
             }
         }
     }
-
-
-    fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
-        let limit = MAX_X * MAX_Y;
-        let start = limit * self.index;
-        gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-            uic.background().color(Color::black()).draw(gl);
-            match self.texture {
-                Some(ref texture) => {
-                    image(texture, &c, gl);
-                    for x in range(0, MAX_X) {
-                        for y in range(0, MAX_Y) {
-                            let index = start + x + (y * MAX_X);
-                            self.draw_label(uic, gl, format!("{}", index).as_slice(), (128 * x) as f64, (((128 + 16) * y) + 128) as f64)
-                        }
-                    }
-                },
-                None => ()
-            }
-        })
-    }
 }
 
-impl Scene for StaticsScene {
-    fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
-        match *e {
-            Event::Render(args) => {
-                self.render(args, ui_context, gl);
+impl<'a> Scene<SceneName, EngineData<'a>> for StaticsScene {
+    fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+        renderer.clear();
+        match self.texture {
+            Some(ref texture) => {
+                renderer.copy(texture, None, None).unwrap();
             },
-            Event::Input(InputEvent::Release(Button::Keyboard(key))) => {
-                match key {
-                    Key::Left => {
-                        if self.index > 0 {
-                            self.index -= 1;
-                            self.create_slice();
-                        }
-                    },
-                    Key::Right => {
-                        self.index += 1;
-                        self.create_slice();
-                    },
-                    _ => ()
-                }
-            },
-            _ => ()
+            None => ()
         };
-        None
+        renderer.present();
+    }
+
+    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+        match *event {
+            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                Some(SceneChangeEvent::PopScene)
+            },
+            Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
+                if self.index > 0 {
+                    self.index -= 1;
+                    self.create_slice(renderer, engine_data);
+                }
+                None
+            },
+            Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
+                self.index += 1;
+                self.create_slice(renderer, engine_data);
+                None
+            },
+             _ => None
+        }
     }
 }

@@ -8,6 +8,7 @@ mod scene;
 mod title_scene;
 mod skills_scene;
 mod tile_scene;
+mod statics_scene;
 mod text_renderer;
 
 use std::path::Path;
@@ -42,6 +43,9 @@ pub fn main() {
             },
             scene::SceneName::TileScene => {
                 tile_scene::TileScene::new(renderer, engine_data)
+            },
+            scene::SceneName::StaticsScene => {
+                statics_scene::StaticsScene::new(renderer, engine_data)
             },
         }
     }, &mut renderer, &mut engine_data);
