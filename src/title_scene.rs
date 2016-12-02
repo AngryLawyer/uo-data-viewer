@@ -15,7 +15,7 @@ pub struct TitleScene {
 impl TitleScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         Box::new(TitleScene {
-           text: engine_data.text_renderer.create_text_texture(renderer, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene", Color::RGBA(255, 255, 255, 255))
+           text: engine_data.text_renderer.create_text_texture(renderer, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene", Color::RGBA(255, 255, 255, 255))
         })
     }
 }
@@ -43,6 +43,9 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TitleScene {
             },
             Event::KeyDown { keycode: Some(Keycode::Num3), .. } => {
                 Some(SceneChangeEvent::PushScene(SceneName::StaticsScene))
+            },
+            Event::KeyDown { keycode: Some(Keycode::Num4), .. } => {
+                Some(SceneChangeEvent::PushScene(SceneName::HuesScene))
             },
              _ => None
         }

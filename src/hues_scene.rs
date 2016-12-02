@@ -1,39 +1,37 @@
-use scene::{BoxedScene, Scene};
-use event::{Event, RenderArgs};
-use conrod::UiContext;
-use opengl_graphics::{Gl};
-use graphics::{Rectangle, rectangle, Context};
-use conrod::{
-    Background,
-    Color,
-    Colorable,
-    Drawable,
-};
-use input::{InputEvent, Button};
-use input::keyboard::Key;
+use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use engine::EngineData;
+use text_renderer::TextRenderer;
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::surface::Surface;
+use std::io::Result;
+use std::path::Path;
+use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::hues::{HueReader, HueGroup, Hue};
 use uorustlibs::color::Color as ColorTrait;
 
-use std::io::IoResult;
+use sdl2::render::{Renderer, Texture, TextureQuery};
+use sdl2::rect::Rect;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
 
 pub struct HuesScene {
-    reader: IoResult<HueReader>,
+    reader: Result<HueReader>,
     index: u32,
-    current_group: Option<IoResult<HueGroup>>
+    current_group: Option<Result<HueGroup>>
 }
 
 impl HuesScene {
-    pub fn new() -> BoxedScene {
-        let mut scene = box HuesScene {
+    pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
+        let mut scene = Box::new(HuesScene {
             reader: HueReader::new(&Path::new("./assets/hues.mul")),
             current_group: None,
             index: 0
-        };
-        scene.load_group();
+        });
+        //scene.load_group();
         scene
     }
 
-    fn load_group(&mut self) {
+    /*fn load_group(&mut self) {
         match self.reader {
             Ok(ref mut hue_reader) => {
                 self.current_group = Some(hue_reader.read_hue_group(self.index))
@@ -83,33 +81,40 @@ impl HuesScene {
             let (r, g, b, _) = color.to_rgba();
             Rectangle::new([r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]).draw(rectangle::square((256.0 + 128.0) + (col_idx * 16) as f64, (32 + (index * 16)) as f64, 16.0), c, gl);
         }
-    }
+    }*/
 
 }
 
-impl Scene for HuesScene {
-    fn handle_event(&mut self, e: &Event, ui_context: &mut UiContext, gl: &mut Gl) -> Option<BoxedScene> {
-        match *e {
-            Event::Render(args) => {
-                self.render(args, ui_context, gl);
+impl<'a> Scene<SceneName, EngineData<'a>> for HuesScene {
+    fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+        renderer.clear();
+        /*match self.texture {
+            Some(ref texture) => {
+                renderer.copy(texture, None, None).unwrap();
             },
-            Event::Input(InputEvent::Release(Button::Keyboard(key))) => {
-                match key {
-                    Key::Left => {
-                        if self.index > 0 {
-                            self.index -= 1;
-                            self.load_group();
-                        }
-                    },
-                    Key::Right => {
-                        self.index += 1;
-                        self.load_group();
-                    },
-                    _ => ()
+            None => ()
+        };*/
+        renderer.present();
+    }
+
+    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+        match *event {
+            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                Some(SceneChangeEvent::PopScene)
+            },
+            Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
+                if self.index > 0 {
+                    self.index -= 1;
+                    //self.create_slice(renderer, engine_data);
                 }
+                None
             },
-            _ => ()
-        };
-        None
+            Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
+                self.index += 1;
+                //self.create_slice(renderer, engine_data);
+                None
+            },
+             _ => None
+        }
     }
 }

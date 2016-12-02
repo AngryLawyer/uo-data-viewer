@@ -12,7 +12,8 @@ pub enum SceneName {
     TitleScene,
     SkillsScene,
     TileScene,
-    StaticsScene
+    StaticsScene,
+    HuesScene,
 }
 
 pub enum SceneChangeEvent<T> {
