@@ -9,6 +9,7 @@ use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::hues::{HueReader, HueGroup, Hue};
 use uorustlibs::color::Color as ColorTrait;
 
+use std::io::{Error, };
 use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
 use sdl2::event::Event;
@@ -17,83 +18,71 @@ use sdl2::keyboard::Keycode;
 pub struct HuesScene {
     reader: Result<HueReader>,
     index: u32,
-    current_group: Option<Result<HueGroup>>
+    texture: Option<Texture>
 }
 
 impl HuesScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let mut scene = Box::new(HuesScene {
             reader: HueReader::new(&Path::new("./assets/hues.mul")),
-            current_group: None,
+            texture: None,
             index: 0
         });
-        //scene.load_group();
+        scene.load_group(renderer, engine_data);
         scene
     }
 
-    /*fn load_group(&mut self) {
-        match self.reader {
+    fn load_group(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+        let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+        let maybe_group = match self.reader {
             Ok(ref mut hue_reader) => {
-                self.current_group = Some(hue_reader.read_hue_group(self.index))
+                hue_reader.read_hue_group(self.index)
+            },
+            Err(ref x) => Err(Error::new(x.kind(), "Whoops"))
+        };
+        match maybe_group {
+            Ok(group) => {
+                let drawn_group = self.draw_hue_group(self.index, &group, renderer, engine_data);
+                drawn_group.blit(None, &mut surface, Some(Rect::new(0, 0, drawn_group.width(), drawn_group.height())));
             },
             Err(_) => ()
+        };
+        self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap());
+    }
+
+    fn draw_hue_group(&self, group_idx: u32, group: &HueGroup, renderer: &mut Renderer, engine_data: &mut EngineData) -> Surface {
+        let mut surface = Surface::new(256, 64 * 9, PixelFormatEnum::RGBA8888).unwrap();
+        for (idx, hue) in group.entries.iter().enumerate() {
+            let drawn_hue = self.draw_hue(&hue, renderer, engine_data);
+            drawn_hue.blit(None, &mut surface, Some(Rect::new(0, idx as i32 * drawn_hue.height() as i32, drawn_hue.width(), drawn_hue.height()))).unwrap();
         }
+        let label = engine_data.text_renderer.create_text(&format!("Group {} - {}", group_idx, group.header), Color::RGBA(255, 255, 255, 255));
+        label.blit(None, &mut surface, Some(Rect::new(0, 64 * 8 + 32, label.width(), label.height())));
+        surface
     }
 
-    fn render(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl) {
-        uic.background().color(Color::black()).draw(gl);
-        gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-            match self.reader {
-                Ok(ref _hue_reader) => {
-                    self.render_hue_group(args, uic, gl, &c)
-                },
-                Err(ref error) => {
-                    self.draw_label(uic, gl, format!("{}", error).as_slice(), 0.0, 0.0);
-                }
-            };
-        });
-    }
-
-    fn render_hue_group(&self, args: RenderArgs, uic: &mut UiContext, gl: &mut Gl, c: &Context) {
-        self.draw_label(uic, gl, format!("Hue group {}", self.index).as_slice(), 0.0, 0.0);
-
-        match self.current_group {
-            Some(Ok(ref hue_group)) => {
-                self.draw_label(uic, gl, format!("Header {}", hue_group.header).as_slice(), 0.0, 16.0);
-                for (idx, hue) in hue_group.entries.iter().enumerate() {
-                    self.render_hue(args, uic, gl, c, idx as u32, hue);
-                }
-            },
-            Some(Err(ref error)) => {
-                self.draw_label(uic, gl, format!("{}", error).as_slice(), 0.0, 16.0);
-            },
-            None => {
-                self.draw_label(uic, gl, "No Hue Group Loaded", 0.0, 16.0);
-            }
-        }
-    }
-
-    fn render_hue(&self, _args: RenderArgs, uic: &mut UiContext, gl: &mut Gl, c: &Context, index: u32, hue: &Hue) {
-        self.draw_label(uic, gl, hue.name.as_slice(), 0.0, (32 + (index * 16)) as f64);
-        self.draw_label(uic, gl, format!("{} - {}", hue.table_start, hue.table_end).as_slice(), 256.0, (32 + (index * 16)) as f64);
-
+    fn draw_hue(&self, hue: &Hue, renderer: &mut Renderer, engine_data: &mut EngineData) -> Surface {
+        let mut surface = Surface::new(256, 64, PixelFormatEnum::RGBA8888).unwrap();
         for (col_idx, &color) in hue.color_table.iter().enumerate() {
             let (r, g, b, _) = color.to_rgba();
-            Rectangle::new([r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0]).draw(rectangle::square((256.0 + 128.0) + (col_idx * 16) as f64, (32 + (index * 16)) as f64, 16.0), c, gl);
-        }
-    }*/
-
+            surface.fill_rect(Some(Rect::new((col_idx as i32 * 16), 0, 16, 64)), Color::RGB(r, g, b)).unwrap();
+        };
+        let label_text = format!("{}: {} - {}", if hue.name.trim().len() > 0 { &hue.name } else { "NONE" }, hue.table_start, hue.table_end);
+        let label = engine_data.text_renderer.create_text(&label_text, Color::RGBA(255, 255, 255, 255));
+        label.blit(None, &mut surface, Some(Rect::new(0, 48, label.width(), label.height())));
+        surface
+    }
 }
 
 impl<'a> Scene<SceneName, EngineData<'a>> for HuesScene {
     fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
         renderer.clear();
-        /*match self.texture {
+        match self.texture {
             Some(ref texture) => {
                 renderer.copy(texture, None, None).unwrap();
             },
             None => ()
-        };*/
+        };
         renderer.present();
     }
 
@@ -105,13 +94,13 @@ impl<'a> Scene<SceneName, EngineData<'a>> for HuesScene {
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
                 if self.index > 0 {
                     self.index -= 1;
-                    //self.create_slice(renderer, engine_data);
+                    self.load_group(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
                 self.index += 1;
-                //self.create_slice(renderer, engine_data);
+                self.load_group(renderer, engine_data);
                 None
             },
              _ => None
