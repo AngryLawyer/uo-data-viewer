@@ -6,6 +6,7 @@ use sdl2::surface::Surface;
 use std::io::Result;
 use std::path::Path;
 use uorustlibs::art::{ArtReader, Art};
+use uorustlibs::tiledata::{TileDataReader, StaticTileData};
 
 use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
@@ -18,17 +19,22 @@ static MAX_Y:u32 = 4;
 
 pub struct StaticsScene {
     reader: Result<ArtReader>,
+    data: Result<TileDataReader>,
     index: u32,
-    texture: Option<Texture>
+    texture: Option<Texture>,
+    tile_data: Vec<Result<StaticTileData>>
 }
 
 impl StaticsScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
+        let data = TileDataReader::new(&Path::new("./assets/tiledata.mul"));
         let mut scene = Box::new(StaticsScene {
             reader: reader,
+            data: data,
             index: 0,
-            texture: None
+            texture: None,
+            tile_data: vec![],
         });
         scene.create_slice(renderer, engine_data);
 
@@ -36,16 +42,16 @@ impl StaticsScene {
     }
 
     fn create_slice(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
-
-        match self.reader {
-            Ok(ref mut reader) => {
+        self.tile_data = vec![];
+        match (&mut self.reader, &mut self.data) {
+            (&mut Ok(ref mut reader), &mut Ok(ref mut data)) => {
                 let limit = MAX_X * MAX_Y;
                 let start = limit * self.index;
                 let mut dest = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
                 dest.fill_rect(None, Color::RGB(0, 0, 0)).unwrap();
 
-                for x in 0..MAX_X {
-                    for y in 0..MAX_Y {
+                for y in 0..MAX_Y {
+                    for x in 0..MAX_X {
                         let index = start + x + (y * MAX_X);
                         let maybe_static = reader.read_static(index);
                         match maybe_static {
@@ -57,14 +63,31 @@ impl StaticsScene {
                         }
                         let label = engine_data.text_renderer.create_text(&format!("{}", index), Color::RGBA(255, 255, 255, 255));
                         label.blit(None, &mut dest, Some(Rect::new(128 * x as i32, ((128 + 16) * y as i32) + 128, label.width(), label.height())));
+                        self.tile_data.push(data.read_static_tile_data(index));
                     }
                 }
 
                 self.texture = Some(renderer.create_texture_from_surface(&dest).unwrap());
             },
-            Err(_) => {
+            _ => {
                 let texture = engine_data.text_renderer.create_text_texture(renderer, "Could not create slice", Color::RGBA(255, 255, 255, 255));
                 self.texture = Some(texture);
+            }
+        }
+    }
+
+    fn handle_click(&mut self, x: i32, y: i32) {
+        let actual_x = x / 128;
+        let actual_y = y / (128 + 16);
+        if actual_x < MAX_X as i32 && actual_y < MAX_Y as i32 {
+            let actual_index = (actual_x + (actual_y * MAX_X as i32)) as usize;
+            if actual_index < self.tile_data.len() {
+                match self.tile_data[actual_index] {
+                    Ok(ref data) => {
+                        println!("{}", data.name);
+                    },
+                    _ => ()
+                }
             }
         }
     }
@@ -99,6 +122,10 @@ impl<'a> Scene<SceneName, EngineData<'a>> for StaticsScene {
                 self.create_slice(renderer, engine_data);
                 None
             },
+            Event::MouseButtonDown { x: x, y: y, .. } => {
+                self.handle_click(x, y);
+                None
+            },       
              _ => None
         }
     }
