@@ -10,6 +10,7 @@ mod skills_scene;
 mod tile_scene;
 mod statics_scene;
 mod hues_scene;
+mod map_scene;
 mod text_renderer;
 
 use std::path::Path;
@@ -50,6 +51,9 @@ pub fn main() {
             },
             scene::SceneName::HuesScene => {
                 hues_scene::HuesScene::new(renderer, engine_data)
+            },
+            scene::SceneName::MapScene => {
+                map_scene::MapScene::new(renderer, engine_data)
             },
         }
     }, &mut renderer, &mut engine_data);
