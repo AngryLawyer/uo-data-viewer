@@ -16,6 +16,9 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
+const MAX_BLOCKS_WIDTH: usize = 64;
+const MAX_BLOCKS_HEIGHT: usize = 64;
+
 pub struct MapScene {
     reader: Result<MapReader>,
     x: u32,
@@ -36,21 +39,32 @@ impl MapScene {
     }
 
     pub fn draw_page(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
-        let block = match self.reader {
+        let mut blocks = vec![];
+
+        match self.reader {
             Ok(ref mut reader) => {
-                reader.read_block_from_coordinates(self.x, self.y).ok()
+                
+                for y in 0..MAX_BLOCKS_WIDTH {
+                    for x in 0..MAX_BLOCKS_HEIGHT {
+                        blocks.push(reader.read_block_from_coordinates(self.x + x as u32, self.y + y as u32));
+                    }
+                }
             },
-            _ => None
+            _ => ()
         };
-        self.texture = match block {
-            Some(block) => {
-                let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
-                let block_surface = self.draw_block(&block);
-                block_surface.blit(None, &mut surface, Some(Rect::new(0, 0, block_surface.width(), block_surface.height())));
-                Some(renderer.create_texture_from_surface(&surface).unwrap())
-            },
-            _ => None
-        };
+        let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+        for y in 0..MAX_BLOCKS_HEIGHT {
+            for x in 0..MAX_BLOCKS_WIDTH {
+                match blocks[x + (y * 8)] {
+                    Ok(ref block) => {
+                        let block_surface = self.draw_block(block);
+                        block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height())));
+                    },
+                    _ => ()
+                }
+            }
+        }
+        self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap());
     }
     
     pub fn draw_block(&self, block: &Block) -> Surface {
