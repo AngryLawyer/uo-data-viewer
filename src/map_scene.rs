@@ -16,8 +16,8 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
-const MAX_BLOCKS_WIDTH: usize = 64;
-const MAX_BLOCKS_HEIGHT: usize = 64;
+const MAX_BLOCKS_WIDTH: usize = 1024 / 8;
+const MAX_BLOCKS_HEIGHT: usize = 768 / 8;
 
 pub struct MapScene {
     reader: Result<MapReader>,
@@ -30,8 +30,8 @@ impl MapScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let mut scene = Box::new(MapScene {
             reader: MapReader::new(&Path::new("./assets/map0.mul"), 768, 512),
-            x: 0,
-            y: 0,
+            x: 200,
+            y: 200,
             texture: None
         });
         scene.draw_page(renderer, engine_data);
@@ -43,10 +43,10 @@ impl MapScene {
 
         match self.reader {
             Ok(ref mut reader) => {
-                
-                for y in 0..MAX_BLOCKS_WIDTH {
-                    for x in 0..MAX_BLOCKS_HEIGHT {
-                        blocks.push(reader.read_block_from_coordinates(self.x + x as u32, self.y + y as u32));
+                for y in 0..MAX_BLOCKS_HEIGHT {
+                    for x in 0..MAX_BLOCKS_WIDTH {
+                        let block = reader.read_block_from_coordinates(self.x + x as u32, self.y + y as u32);
+                        blocks.push(block);
                     }
                 }
             },
@@ -55,7 +55,7 @@ impl MapScene {
         let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
         for y in 0..MAX_BLOCKS_HEIGHT {
             for x in 0..MAX_BLOCKS_WIDTH {
-                match blocks[x + (y * 8)] {
+                match blocks[x + (y * MAX_BLOCKS_WIDTH)] {
                     Ok(ref block) => {
                         let block_surface = self.draw_block(block);
                         block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height())));
@@ -66,7 +66,7 @@ impl MapScene {
         }
         self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap());
     }
-    
+
     pub fn draw_block(&self, block: &Block) -> Surface {
         let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
         surface.with_lock_mut(|bitmap| {
@@ -106,25 +106,25 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
             },
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
                 if self.x > 0 {
-                    self.x -= 1;
+                    self.x -= (MAX_BLOCKS_WIDTH as u32 / 4);
                     self.draw_page(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
-                self.x += 1;
+                self.x += (MAX_BLOCKS_WIDTH as u32 / 4);
                 self.draw_page(renderer, engine_data);
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Up), .. } => {
                 if self.y > 0 {
-                    self.y -= 1;
+                    self.y -= (MAX_BLOCKS_HEIGHT as u32 / 4);
                     self.draw_page(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Down), .. } => {
-                self.y += 1;
+                self.y += (MAX_BLOCKS_HEIGHT as u32 / 4);
                 self.draw_page(renderer, engine_data);
                 None
             },
