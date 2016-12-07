@@ -18,6 +18,8 @@ use sdl2::keyboard::Keycode;
 
 const MAX_BLOCKS_WIDTH: usize = 1024 / 8;
 const MAX_BLOCKS_HEIGHT: usize = 768 / 8;
+const STEP_X: usize = MAX_BLOCKS_WIDTH / 4;
+const STEP_Y: usize = MAX_BLOCKS_HEIGHT / 4;
 
 pub struct MapScene {
     reader: Result<MapReader>,
@@ -30,8 +32,8 @@ impl MapScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let mut scene = Box::new(MapScene {
             reader: MapReader::new(&Path::new("./assets/map0.mul"), 768, 512),
-            x: 200,
-            y: 200,
+            x: 0,
+            y: 0,
             texture: None
         });
         scene.draw_page(renderer, engine_data);
@@ -105,26 +107,26 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
                 Some(SceneChangeEvent::PopScene)
             },
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
-                if self.x > 0 {
-                    self.x -= (MAX_BLOCKS_WIDTH as u32 / 4);
+                if self.x >= STEP_X as u32 {
+                    self.x -= STEP_X as u32;
                     self.draw_page(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
-                self.x += (MAX_BLOCKS_WIDTH as u32 / 4);
+                self.x += STEP_X as u32;
                 self.draw_page(renderer, engine_data);
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Up), .. } => {
-                if self.y > 0 {
-                    self.y -= (MAX_BLOCKS_HEIGHT as u32 / 4);
+                if self.y >= STEP_Y as u32 {
+                    self.y -= STEP_Y as u32;
                     self.draw_page(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Down), .. } => {
-                self.y += (MAX_BLOCKS_HEIGHT as u32 / 4);
+                self.y += STEP_Y as u32;
                 self.draw_page(renderer, engine_data);
                 None
             },
