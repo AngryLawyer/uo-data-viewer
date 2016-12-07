@@ -21,71 +21,92 @@ const MAX_BLOCKS_HEIGHT: usize = 768 / 8;
 const STEP_X: usize = MAX_BLOCKS_WIDTH / 4;
 const STEP_Y: usize = MAX_BLOCKS_HEIGHT / 4;
 
+enum MapRenderMode {
+    HeightMap
+}
+
 pub struct MapScene {
-    reader: Result<MapReader>,
+    map_reader: Result<MapReader>,
     x: u32,
     y: u32,
+    mode: MapRenderMode,
     texture: Option<Texture>
 }
+
+pub fn draw_block(block: &Block) -> Surface {
+    let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
+    surface.with_lock_mut(|bitmap| {
+        let mut read_idx = 0;
+
+        for y in 0..8 {
+            for x in 0..8 {
+                let target = (x + (y * 8));
+                let height = (block.cells[target].altitude as i16 + 128) as u8;
+                bitmap[target * 4] = 255;
+                bitmap[target * 4 + 1] = height;
+                bitmap[target * 4 + 2] = height;
+                bitmap[target * 4 + 3] = height;
+            }
+        };
+    });
+    surface
+}
+
+pub fn draw_region<F>(blocks: &Vec<Result<Block>>, renderer: F) -> Surface
+    where F: Fn(&Block) -> Surface {
+    let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+    for y in 0..MAX_BLOCKS_HEIGHT {
+        for x in 0..MAX_BLOCKS_WIDTH {
+            match blocks[x + (y * MAX_BLOCKS_WIDTH)] {
+                Ok(ref block) => {
+                    let block_surface = renderer(block);
+                    block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height()))).unwrap();
+                },
+                _ => ()
+            }
+        }
+    }
+    surface
+}
+
 
 impl MapScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let mut scene = Box::new(MapScene {
-            reader: MapReader::new(&Path::new("./assets/map0.mul"), 768, 512),
+            map_reader: MapReader::new(&Path::new("./assets/map0.mul"), 768, 512),
             x: 0,
             y: 0,
-            texture: None
+            texture: None,
+            mode: MapRenderMode::HeightMap
         });
         scene.draw_page(renderer, engine_data);
         scene
     }
 
-    pub fn draw_page(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+    pub fn get_blocks(&mut self) -> Vec<Result<Block>> {
         let mut blocks = vec![];
 
-        match self.reader {
-            Ok(ref mut reader) => {
+        match self.map_reader {
+            Ok(ref mut map_reader) => {
                 for y in 0..MAX_BLOCKS_HEIGHT {
                     for x in 0..MAX_BLOCKS_WIDTH {
-                        let block = reader.read_block_from_coordinates(self.x + x as u32, self.y + y as u32);
+                        let block = map_reader.read_block_from_coordinates(self.x + x as u32, self.y + y as u32);
                         blocks.push(block);
                     }
                 }
             },
             _ => ()
         };
-        let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
-        for y in 0..MAX_BLOCKS_HEIGHT {
-            for x in 0..MAX_BLOCKS_WIDTH {
-                match blocks[x + (y * MAX_BLOCKS_WIDTH)] {
-                    Ok(ref block) => {
-                        let block_surface = self.draw_block(block);
-                        block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height())));
-                    },
-                    _ => ()
-                }
-            }
-        }
-        self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap());
+        blocks
     }
 
-    pub fn draw_block(&self, block: &Block) -> Surface {
-        let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
-        surface.with_lock_mut(|bitmap| {
-            let mut read_idx = 0;
-
-            for y in 0..8 {
-                for x in 0..8 {
-                    let target = (x + (y * 8));
-                    let height = (block.cells[target].altitude as i16 + 128) as u8;
-                    bitmap[target * 4] = 255;
-                    bitmap[target * 4 + 1] = height;
-                    bitmap[target * 4 + 2] = height;
-                    bitmap[target * 4 + 3] = height;
-                }
-            };
-        });
-        surface
+    pub fn draw_page(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+        let blocks = self.get_blocks();
+        let block_drawer = match self.mode {
+            MapRenderMode::HeightMap => draw_block
+        };
+        let surface = draw_region(&blocks, block_drawer);
+        self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap())
     }
 }
 
@@ -127,6 +148,11 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
             },
             Event::KeyDown { keycode: Some(Keycode::Down), .. } => {
                 self.y += STEP_Y as u32;
+                self.draw_page(renderer, engine_data);
+                None
+            },
+            Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
+                self.mode = MapRenderMode::HeightMap;
                 self.draw_page(renderer, engine_data);
                 None
             },
