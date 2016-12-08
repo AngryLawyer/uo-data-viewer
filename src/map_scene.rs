@@ -22,7 +22,8 @@ const STEP_X: usize = MAX_BLOCKS_WIDTH / 4;
 const STEP_Y: usize = MAX_BLOCKS_HEIGHT / 4;
 
 enum MapRenderMode {
-    HeightMap
+    HeightMap,
+    RadarMap,
 }
 
 pub struct MapScene {
@@ -33,7 +34,7 @@ pub struct MapScene {
     texture: Option<Texture>
 }
 
-pub fn draw_block(block: &Block) -> Surface {
+pub fn draw_heightmap_block(block: &Block) -> Surface {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
         let mut read_idx = 0;
@@ -103,7 +104,8 @@ impl MapScene {
     pub fn draw_page(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
         let blocks = self.get_blocks();
         let block_drawer = match self.mode {
-            MapRenderMode::HeightMap => draw_block
+            MapRenderMode::HeightMap => draw_heightmap_block,
+            MapRenderMode::RadarMap => draw_heightmap_block,
         };
         let surface = draw_region(&blocks, block_drawer);
         self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap())
@@ -153,6 +155,11 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
             },
             Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
                 self.mode = MapRenderMode::HeightMap;
+                self.draw_page(renderer, engine_data);
+                None
+            },
+            Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
+                self.mode = MapRenderMode::RadarMap;
                 self.draw_page(renderer, engine_data);
                 None
             },
