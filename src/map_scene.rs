@@ -7,8 +7,8 @@ use std::io::Result;
 use std::path::Path;
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::hues::{HueReader, HueGroup, Hue};
-use uorustlibs::color::Color as ColorTrait;
-use uorustlibs::map::{MapReader, Block};
+use uorustlibs::color::{Color16, Color as ColorTrait};
+use uorustlibs::map::{MapReader, Block, RadarColReader};
 
 use std::io::{Error, };
 use sdl2::render::{Renderer, Texture, TextureQuery};
@@ -28,13 +28,14 @@ enum MapRenderMode {
 
 pub struct MapScene {
     map_reader: Result<MapReader>,
+    radar_colors: Result<Vec<Color16>>,
     x: u32,
     y: u32,
     mode: MapRenderMode,
     texture: Option<Texture>
 }
 
-pub fn draw_heightmap_block(block: &Block) -> Surface {
+pub fn draw_heightmap_block<'a>(block: &Block, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
         let mut read_idx = 0;
@@ -53,32 +54,41 @@ pub fn draw_heightmap_block(block: &Block) -> Surface {
     surface
 }
 
-pub fn draw_region<F>(blocks: &Vec<Result<Block>>, renderer: F) -> Surface
-    where F: Fn(&Block) -> Surface {
-    let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
-    for y in 0..MAX_BLOCKS_HEIGHT {
-        for x in 0..MAX_BLOCKS_WIDTH {
-            match blocks[x + (y * MAX_BLOCKS_WIDTH)] {
-                Ok(ref block) => {
-                    let block_surface = renderer(block);
-                    block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height()))).unwrap();
-                },
-                _ => ()
+pub fn draw_radarcol_block<'a>(block: &Block, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
+    let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
+    surface.with_lock_mut(|bitmap| {
+        let mut read_idx = 0;
+
+        for y in 0..8 {
+            for x in 0..8 {
+                let target = (x + (y * 8));
+                let index = block.cells[target].graphic;
+                let (r, g, b, _) = match radar_cols {
+                    &Ok(ref colors) => colors[index as usize].to_rgba(),
+                    _ => index.to_rgba()
+                };
+                bitmap[target * 4] = 255;
+                bitmap[target * 4 + 1] = b;
+                bitmap[target * 4 + 2] = g;
+                bitmap[target * 4 + 3] = r;
             }
-        }
-    }
+        };
+    });
     surface
 }
 
-
 impl MapScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
+        let colors = RadarColReader::new(&Path::new("./assets/radarcol.mul"))
+            .and_then(|mut reader| reader.read_colors());
+
         let mut scene = Box::new(MapScene {
             map_reader: MapReader::new(&Path::new("./assets/map0.mul"), 768, 512),
             x: 0,
             y: 0,
             texture: None,
-            mode: MapRenderMode::HeightMap
+            mode: MapRenderMode::HeightMap,
+            radar_colors: colors
         });
         scene.draw_page(renderer, engine_data);
         scene
@@ -105,9 +115,20 @@ impl MapScene {
         let blocks = self.get_blocks();
         let block_drawer = match self.mode {
             MapRenderMode::HeightMap => draw_heightmap_block,
-            MapRenderMode::RadarMap => draw_heightmap_block,
+            MapRenderMode::RadarMap => draw_radarcol_block,
         };
-        let surface = draw_region(&blocks, block_drawer);
+        let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+        for y in 0..MAX_BLOCKS_HEIGHT {
+            for x in 0..MAX_BLOCKS_WIDTH {
+                match blocks[x + (y * MAX_BLOCKS_WIDTH)] {
+                    Ok(ref block) => {
+                        let block_surface = block_drawer(block, &self.radar_colors);
+                        block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height()))).unwrap();
+                    },
+                    _ => ()
+                }
+            }
+        }
         self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap())
     }
 }
