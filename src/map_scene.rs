@@ -16,10 +16,50 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
-const MAX_BLOCKS_WIDTH: usize = 1024 / 8;
-const MAX_BLOCKS_HEIGHT: usize = 768 / 8;
-const STEP_X: usize = MAX_BLOCKS_WIDTH / 4;
-const STEP_Y: usize = MAX_BLOCKS_HEIGHT / 4;
+const MAX_BLOCKS_WIDTH: u32 = 1024 / 8;
+const MAX_BLOCKS_HEIGHT: u32 = 768 / 8;
+const STEP_X: u32 = MAX_BLOCKS_WIDTH / 4;
+const STEP_Y: u32 = MAX_BLOCKS_HEIGHT / 4;
+
+struct MapLens {
+    pub blocks: Vec<Option<Block>>,
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32
+}
+
+impl MapLens {
+    pub fn new(map_reader: &mut MapReader, x: u32, y: u32, width: u32, height: u32) -> MapLens {
+        let mut blocks = vec![];
+        for yy in 0..height {
+            for xx in 0..width {
+                let block = map_reader.read_block_from_coordinates(x + xx, y + yy);
+                blocks.push(block.ok());
+            }
+        }
+        MapLens {
+            blocks: blocks,
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        }
+    }
+
+    pub fn update(&self, map_reader: &mut MapReader, x: u32, y: u32) -> MapLens {
+        let difference_x = x as i64 - self.x as i64;
+        let difference_y = y as i64 - self.y as i64;
+        println!("{} {}", difference_x, difference_y);
+        MapLens {
+            blocks: self.blocks.clone(),
+            x: x,
+            y: y,
+            width: self.width,
+            height: self.height
+        }
+    }
+}
 
 enum MapRenderMode {
     HeightMap,
@@ -32,7 +72,8 @@ pub struct MapScene {
     x: u32,
     y: u32,
     mode: MapRenderMode,
-    texture: Option<Texture>
+    texture: Option<Texture>,
+    map_lens: Option<MapLens>
 }
 
 pub fn draw_heightmap_block<'a>(block: &Block, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
@@ -88,48 +129,52 @@ impl MapScene {
             y: 0,
             texture: None,
             mode: MapRenderMode::HeightMap,
-            radar_colors: colors
+            radar_colors: colors,
+            map_lens: None
         });
+
         scene.draw_page(renderer, engine_data);
         scene
     }
 
-    pub fn get_blocks(&mut self) -> Vec<Result<Block>> {
-        let mut blocks = vec![];
-
-        match self.map_reader {
-            Ok(ref mut map_reader) => {
-                for y in 0..MAX_BLOCKS_HEIGHT {
-                    for x in 0..MAX_BLOCKS_WIDTH {
-                        let block = map_reader.read_block_from_coordinates(self.x + x as u32, self.y + y as u32);
-                        blocks.push(block);
-                    }
-                }
+    pub fn refresh_lens(&mut self) {
+        let map_lens = match (&mut self.map_lens, &mut self.map_reader) {
+            (&mut Some(ref lens), &mut Ok(ref mut map_reader)) => {
+                Some(lens.update(map_reader, self.x, self.y))
             },
-            _ => ()
+            (&mut None, &mut Ok(ref mut map_reader)) => {
+                Some(MapLens::new(map_reader, self.x, self.y, MAX_BLOCKS_WIDTH, MAX_BLOCKS_HEIGHT))
+            },
+            _ => None
         };
-        blocks
+        self.map_lens = map_lens;
     }
 
     pub fn draw_page(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
-        let blocks = self.get_blocks();
-        let block_drawer = match self.mode {
-            MapRenderMode::HeightMap => draw_heightmap_block,
-            MapRenderMode::RadarMap => draw_radarcol_block,
-        };
-        let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
-        for y in 0..MAX_BLOCKS_HEIGHT {
-            for x in 0..MAX_BLOCKS_WIDTH {
-                match blocks[x + (y * MAX_BLOCKS_WIDTH)] {
-                    Ok(ref block) => {
-                        let block_surface = block_drawer(block, &self.radar_colors);
-                        block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height()))).unwrap();
-                    },
-                    _ => ()
+        self.refresh_lens();
+
+        self.texture = match self.map_lens {
+            Some(ref lens) => {
+                let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+                let block_drawer = match self.mode {
+                    MapRenderMode::HeightMap => draw_heightmap_block,
+                    MapRenderMode::RadarMap => draw_radarcol_block,
+                };
+                for y in 0..lens.height {
+                    for x in 0..lens.width {
+                        match lens.blocks[(x + (y * MAX_BLOCKS_WIDTH)) as usize] {
+                            Some(ref block) => {
+                                let block_surface = block_drawer(block, &self.radar_colors);
+                                block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height()))).unwrap();
+                            },
+                            _ => ()
+                        }
+                    }
                 }
-            }
+                Some(renderer.create_texture_from_surface(&surface).unwrap())
+            },
+            None => None
         }
-        self.texture = Some(renderer.create_texture_from_surface(&surface).unwrap())
     }
 }
 
