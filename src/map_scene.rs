@@ -8,9 +8,9 @@ use std::path::Path;
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::hues::{HueReader, HueGroup, Hue};
 use uorustlibs::color::{Color16, Color as ColorTrait};
-use uorustlibs::map::{MapReader, Block, RadarColReader};
+use uorustlibs::map::{MapReader, Block, RadarColReader, StaticReader, StaticLocation};
 
-use std::io::{Error, };
+use std::io::{Error};
 use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
 use sdl2::event::Event;
@@ -22,7 +22,7 @@ const STEP_X: u32 = MAX_BLOCKS_WIDTH / 4;
 const STEP_Y: u32 = MAX_BLOCKS_HEIGHT / 4;
 
 struct MapLens {
-    pub blocks: Vec<Option<Block>>,
+    pub blocks: Vec<(Option<Block>, Option<Vec<StaticLocation>>)>,
     pub x: u32,
     pub y: u32,
     pub width: u32,
@@ -30,12 +30,13 @@ struct MapLens {
 }
 
 impl MapLens {
-    pub fn new(map_reader: &mut MapReader, x: u32, y: u32, width: u32, height: u32) -> MapLens {
+    pub fn new(map_reader: &mut MapReader, static_reader: &mut StaticReader, x: u32, y: u32, width: u32, height: u32) -> MapLens {
         let mut blocks = vec![];
         for yy in 0..height {
             for xx in 0..width {
                 let block = map_reader.read_block_from_coordinates(x + xx, y + yy);
-                blocks.push(block.ok());
+                let statics = static_reader.read_block_from_coordinates(x + xx, y + yy);
+                blocks.push((block.ok(), statics.ok()));
             }
         }
         MapLens {
@@ -47,7 +48,7 @@ impl MapLens {
         }
     }
 
-    pub fn update(&self, map_reader: &mut MapReader, x: u32, y: u32) -> MapLens {
+    pub fn update(&self, map_reader: &mut MapReader, static_reader: &mut StaticReader, x: u32, y: u32) -> MapLens {
         let difference_x = x as i64 - self.x as i64;
         let difference_y = y as i64 - self.y as i64;
         let mut blocks = vec![];
@@ -56,9 +57,9 @@ impl MapLens {
                 let offset_x = xx as i64 + difference_x;
                 let offset_y = yy as i64 + difference_y;
                 if offset_x < 0 || offset_y < 0 || offset_x >= self.width as i64 || offset_y >= self.height as i64 {
-                    blocks.push(map_reader.read_block_from_coordinates(x + xx, y + yy).ok());
+                    blocks.push((map_reader.read_block_from_coordinates(x + xx, y + yy).ok(), static_reader.read_block_from_coordinates(x + xx, y + yy).ok()));
                 } else {
-                    blocks.push(self.blocks[(offset_x + (offset_y * self.width as i64)) as usize]);
+                    blocks.push(self.blocks[(offset_x + (offset_y * self.width as i64)) as usize].clone());
                 }
             }
         }
@@ -76,10 +77,12 @@ impl MapLens {
 enum MapRenderMode {
     HeightMap,
     RadarMap,
+    StaticsMap,
 }
 
 pub struct MapScene {
     map_reader: Result<MapReader>,
+    static_reader: Result<StaticReader>,
     radar_colors: Result<Vec<Color16>>,
     x: u32,
     y: u32,
@@ -88,11 +91,9 @@ pub struct MapScene {
     map_lens: Option<MapLens>
 }
 
-pub fn draw_heightmap_block<'a>(block: &Block, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
+pub fn draw_heightmap_block<'a>(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
-        let mut read_idx = 0;
-
         for y in 0..8 {
             for x in 0..8 {
                 let target = (x + (y * 8));
@@ -107,11 +108,9 @@ pub fn draw_heightmap_block<'a>(block: &Block, radar_cols: &Result<Vec<Color16>>
     surface
 }
 
-pub fn draw_radarcol_block<'a>(block: &Block, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
+pub fn draw_radarcol_block<'a>(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
-        let mut read_idx = 0;
-
         for y in 0..8 {
             for x in 0..8 {
                 let target = (x + (y * 8));
@@ -130,6 +129,31 @@ pub fn draw_radarcol_block<'a>(block: &Block, radar_cols: &Result<Vec<Color16>>)
     surface
 }
 
+pub fn draw_statics_block<'a>(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
+    let mut surface = draw_radarcol_block(block, statics, radar_cols);
+    let mut last_height_locs = vec![-127; 64];
+    surface.with_lock_mut(|bitmap| {
+        for stat in statics {
+            let lookup = (stat.x + (stat.y * 8)) as usize;
+            if last_height_locs[lookup] < stat.altitude {
+                // Paint the cell as we're higher.
+                // Inefficient, but probably no worse than trying to keep track of which items are in which cell
+                let (r, g, b, _) = match radar_cols {
+                    &Ok(ref colors) => colors[stat.color_idx() as usize].to_rgba(),
+                    _ => (0, 0, 0, 0)
+                };
+                bitmap[lookup * 4] = 255;
+                bitmap[lookup * 4 + 1] = b;
+                bitmap[lookup * 4 + 2] = g;
+                bitmap[lookup * 4 + 3] = r;
+                
+                last_height_locs[lookup] = stat.altitude;
+            }
+        }
+    });
+    surface
+}
+
 impl MapScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let colors = RadarColReader::new(&Path::new("./assets/radarcol.mul"))
@@ -137,6 +161,7 @@ impl MapScene {
 
         let mut scene = Box::new(MapScene {
             map_reader: MapReader::new(&Path::new("./assets/map0.mul"), 768, 512),
+            static_reader: StaticReader::new(&Path::new("./assets/staidx0.mul"), &Path::new("./assets/statics0.mul"), 768, 512),
             x: 0,
             y: 0,
             texture: None,
@@ -150,12 +175,12 @@ impl MapScene {
     }
 
     pub fn refresh_lens(&mut self) {
-        let map_lens = match (&mut self.map_lens, &mut self.map_reader) {
-            (&mut Some(ref lens), &mut Ok(ref mut map_reader)) => {
-                Some(lens.update(map_reader, self.x, self.y))
+        let map_lens = match (&mut self.map_lens, &mut self.map_reader, &mut self.static_reader) {
+            (&mut Some(ref lens), &mut Ok(ref mut map_reader), &mut Ok(ref mut static_reader)) => {
+                Some(lens.update(map_reader, static_reader, self.x, self.y))
             },
-            (&mut None, &mut Ok(ref mut map_reader)) => {
-                Some(MapLens::new(map_reader, self.x, self.y, MAX_BLOCKS_WIDTH, MAX_BLOCKS_HEIGHT))
+            (&mut None, &mut Ok(ref mut map_reader), &mut Ok(ref mut static_reader)) => {
+                Some(MapLens::new(map_reader, static_reader, self.x, self.y, MAX_BLOCKS_WIDTH, MAX_BLOCKS_HEIGHT))
             },
             _ => None
         };
@@ -171,12 +196,17 @@ impl MapScene {
                 let block_drawer = match self.mode {
                     MapRenderMode::HeightMap => draw_heightmap_block,
                     MapRenderMode::RadarMap => draw_radarcol_block,
+                    MapRenderMode::StaticsMap => draw_statics_block,
                 };
                 for y in 0..lens.height {
                     for x in 0..lens.width {
-                        match lens.blocks[(x + (y * MAX_BLOCKS_WIDTH)) as usize] {
-                            Some(ref block) => {
-                                let block_surface = block_drawer(block, &self.radar_colors);
+                        match &lens.blocks[(x + (y * MAX_BLOCKS_WIDTH)) as usize] {
+                            &(Some(ref block), Some(ref statics)) => {
+                                let block_surface = block_drawer(block, statics, &self.radar_colors);
+                                block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height()))).unwrap();
+                            },
+                            &(Some(ref block), _) => {
+                                let block_surface = block_drawer(block, &vec![], &self.radar_colors);
                                 block_surface.blit(None, &mut surface, Some(Rect::new(x as i32 * 8, y as i32* 8, block_surface.width(), block_surface.height()))).unwrap();
                             },
                             _ => ()
@@ -238,6 +268,11 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
             },
             Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
                 self.mode = MapRenderMode::RadarMap;
+                self.draw_page(renderer, engine_data);
+                None
+            },
+            Event::KeyDown { keycode: Some(Keycode::Num3), .. } => {
+                self.mode = MapRenderMode::StaticsMap;
                 self.draw_page(renderer, engine_data);
                 None
             },
