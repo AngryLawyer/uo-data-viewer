@@ -9,6 +9,7 @@ use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::hues::{HueReader, HueGroup, Hue};
 use uorustlibs::color::{Color16, Color as ColorTrait};
 use uorustlibs::map::{MapReader, Block, RadarColReader, StaticReader, StaticLocation};
+use uorustlibs::map::map_size::TRAMMEL;
 
 use std::io::{Error};
 use sdl2::render::{Renderer, Texture, TextureQuery};
@@ -160,8 +161,8 @@ impl MapScene {
             .and_then(|mut reader| reader.read_colors());
 
         let mut scene = Box::new(MapScene {
-            map_reader: MapReader::new(&Path::new("./assets/map0.mul"), 768, 512),
-            static_reader: StaticReader::new(&Path::new("./assets/staidx0.mul"), &Path::new("./assets/statics0.mul"), 768, 512),
+            map_reader: MapReader::new(&Path::new("./assets/map0.mul"), TRAMMEL.0 / 8, TRAMMEL.1 / 8),
+            static_reader: StaticReader::new(&Path::new("./assets/staidx0.mul"), &Path::new("./assets/statics0.mul"), TRAMMEL.0 / 8, TRAMMEL.1 / 8),
             x: 0,
             y: 0,
             texture: None,
