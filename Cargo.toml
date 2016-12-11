@@ -9,7 +9,8 @@ sdl2 = "0.25.0"
 sdl2_ttf = "0.25.0"
 
 [dependencies.uo-rust-libs]
-git = "https://github.com/AngryLawyer/uo-rust-libs.git"
+# git = "https://github.com/AngryLawyer/uo-rust-libs.git"
+path = "/home/tony/Projects/uo-rust-libs"
 features = ["use-sdl2"]
 
 [dependencies.sdl2-engine-helpers]

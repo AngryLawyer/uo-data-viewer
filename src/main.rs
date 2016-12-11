@@ -12,6 +12,7 @@ mod statics_scene;
 mod hues_scene;
 mod map_scene;
 mod text_renderer;
+mod map;
 
 use std::path::Path;
 

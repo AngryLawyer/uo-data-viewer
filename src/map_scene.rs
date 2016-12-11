@@ -5,11 +5,9 @@ use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::surface::Surface;
 use std::io::Result;
 use std::path::Path;
-use uorustlibs::art::{ArtReader, Art};
-use uorustlibs::hues::{HueReader, HueGroup, Hue};
 use uorustlibs::color::{Color16, Color as ColorTrait};
 use uorustlibs::map::{MapReader, Block, RadarColReader, StaticReader, StaticLocation};
-use uorustlibs::map::map_size::TRAMMEL;
+use uorustlibs::map::map_size::{TRAMMEL, FELUCCA, ILSHENAR, MALAS};
 
 use std::io::{Error};
 use sdl2::render::{Renderer, Texture, TextureQuery};
@@ -17,63 +15,13 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
+use map::lens::MapLens;
+use map::Facet;
+
 const MAX_BLOCKS_WIDTH: u32 = 1024 / 8;
 const MAX_BLOCKS_HEIGHT: u32 = 768 / 8;
 const STEP_X: u32 = MAX_BLOCKS_WIDTH / 4;
 const STEP_Y: u32 = MAX_BLOCKS_HEIGHT / 4;
-
-struct MapLens {
-    pub blocks: Vec<(Option<Block>, Option<Vec<StaticLocation>>)>,
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32
-}
-
-impl MapLens {
-    pub fn new(map_reader: &mut MapReader, static_reader: &mut StaticReader, x: u32, y: u32, width: u32, height: u32) -> MapLens {
-        let mut blocks = vec![];
-        for yy in 0..height {
-            for xx in 0..width {
-                let block = map_reader.read_block_from_coordinates(x + xx, y + yy);
-                let statics = static_reader.read_block_from_coordinates(x + xx, y + yy);
-                blocks.push((block.ok(), statics.ok()));
-            }
-        }
-        MapLens {
-            blocks: blocks,
-            x: x,
-            y: y,
-            width: width,
-            height: height
-        }
-    }
-
-    pub fn update(&self, map_reader: &mut MapReader, static_reader: &mut StaticReader, x: u32, y: u32) -> MapLens {
-        let difference_x = x as i64 - self.x as i64;
-        let difference_y = y as i64 - self.y as i64;
-        let mut blocks = vec![];
-        for yy in 0..self.height {
-            for xx in 0..self.width {
-                let offset_x = xx as i64 + difference_x;
-                let offset_y = yy as i64 + difference_y;
-                if offset_x < 0 || offset_y < 0 || offset_x >= self.width as i64 || offset_y >= self.height as i64 {
-                    blocks.push((map_reader.read_block_from_coordinates(x + xx, y + yy).ok(), static_reader.read_block_from_coordinates(x + xx, y + yy).ok()));
-                } else {
-                    blocks.push(self.blocks[(offset_x + (offset_y * self.width as i64)) as usize].clone());
-                }
-            }
-        }
-        
-        MapLens {
-            blocks: blocks,
-            x: x,
-            y: y,
-            width: self.width,
-            height: self.height
-        }
-    }
-}
 
 enum MapRenderMode {
     HeightMap,
@@ -81,15 +29,19 @@ enum MapRenderMode {
     StaticsMap,
 }
 
+const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 4] = [
+    ("./assets/map0.mul", "./assets/staidx0.mul", "./assets/statics0.mul", TRAMMEL),
+    ("./assets/map0.mul", "./assets/staidx0.mul", "./assets/statics0.mul", FELUCCA),
+    ("./assets/map2.mul", "./assets/staidx2.mul", "./assets/statics2.mul", ILSHENAR),
+    ("./assets/map3.mul", "./assets/staidx3.mul", "./assets/statics3.mul", MALAS),
+];
+
 pub struct MapScene {
-    map_reader: Result<MapReader>,
-    static_reader: Result<StaticReader>,
+    facet: Facet,
+    map_id: u8,
     radar_colors: Result<Vec<Color16>>,
-    x: u32,
-    y: u32,
     mode: MapRenderMode,
     texture: Option<Texture>,
-    map_lens: Option<MapLens>
 }
 
 pub fn draw_heightmap_block<'a>(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
@@ -155,44 +107,38 @@ pub fn draw_statics_block<'a>(block: &Block, statics: &Vec<StaticLocation>, rada
     surface
 }
 
+pub fn map_id_to_facet(id: u8) -> Facet {
+    let corrected_id = if id as usize >= MAP_DETAILS.len() {
+        0
+    } else {
+        id as usize
+    };
+    let (map, idx, statics, (width, height)) = MAP_DETAILS[corrected_id];
+    Facet::new(&Path::new(map), &Path::new(idx), &Path::new(statics), width / 8, height / 8)
+}
+
 impl MapScene {
     pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         let colors = RadarColReader::new(&Path::new("./assets/radarcol.mul"))
             .and_then(|mut reader| reader.read_colors());
 
         let mut scene = Box::new(MapScene {
-            map_reader: MapReader::new(&Path::new("./assets/map0.mul"), TRAMMEL.0 / 8, TRAMMEL.1 / 8),
-            static_reader: StaticReader::new(&Path::new("./assets/staidx0.mul"), &Path::new("./assets/statics0.mul"), TRAMMEL.0 / 8, TRAMMEL.1 / 8),
-            x: 0,
-            y: 0,
+            facet: map_id_to_facet(0),
+            map_id: 0,
             texture: None,
             mode: MapRenderMode::HeightMap,
             radar_colors: colors,
-            map_lens: None
         });
 
         scene.draw_page(renderer, engine_data);
         scene
     }
 
-    pub fn refresh_lens(&mut self) {
-        let map_lens = match (&mut self.map_lens, &mut self.map_reader, &mut self.static_reader) {
-            (&mut Some(ref lens), &mut Ok(ref mut map_reader), &mut Ok(ref mut static_reader)) => {
-                Some(lens.update(map_reader, static_reader, self.x, self.y))
-            },
-            (&mut None, &mut Ok(ref mut map_reader), &mut Ok(ref mut static_reader)) => {
-                Some(MapLens::new(map_reader, static_reader, self.x, self.y, MAX_BLOCKS_WIDTH, MAX_BLOCKS_HEIGHT))
-            },
-            _ => None
-        };
-        self.map_lens = map_lens;
-    }
-
     pub fn draw_page(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
-        self.refresh_lens();
+        let lens = self.facet.get_lens();
 
-        self.texture = match self.map_lens {
-            Some(ref lens) => {
+        self.texture = match lens {
+            &Some(ref lens) => {
                 let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
                 let block_drawer = match self.mode {
                     MapRenderMode::HeightMap => draw_heightmap_block,
@@ -216,7 +162,7 @@ impl MapScene {
                 }
                 Some(renderer.create_texture_from_surface(&surface).unwrap())
             },
-            None => None
+            &None => None
         }
     }
 }
@@ -239,26 +185,26 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
                 Some(SceneChangeEvent::PopScene)
             },
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
-                if self.x >= STEP_X as u32 {
-                    self.x -= STEP_X as u32;
+                if self.facet.x >= STEP_X as u32 {
+                    self.facet.x -= STEP_X as u32;
                     self.draw_page(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
-                self.x += STEP_X as u32;
+                self.facet.x += STEP_X as u32;
                 self.draw_page(renderer, engine_data);
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Up), .. } => {
-                if self.y >= STEP_Y as u32 {
-                    self.y -= STEP_Y as u32;
+                if self.facet.y >= STEP_Y as u32 {
+                    self.facet.y -= STEP_Y as u32;
                     self.draw_page(renderer, engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Down), .. } => {
-                self.y += STEP_Y as u32;
+                self.facet.y += STEP_Y as u32;
                 self.draw_page(renderer, engine_data);
                 None
             },
@@ -274,6 +220,13 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
             },
             Event::KeyDown { keycode: Some(Keycode::Num3), .. } => {
                 self.mode = MapRenderMode::StaticsMap;
+                self.draw_page(renderer, engine_data);
+                None
+            },
+            Event::KeyDown { keycode: Some(Keycode::Tab), .. } => {
+                self.mode = MapRenderMode::HeightMap;
+                self.map_id = (self.map_id + 1) % MAP_DETAILS.len() as u8;
+                self.facet = map_id_to_facet(self.map_id);
                 self.draw_page(renderer, engine_data);
                 None
             },
