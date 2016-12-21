@@ -15,6 +15,7 @@ pub enum SceneName {
     StaticsScene,
     HuesScene,
     MapScene,
+    GumpScene
 }
 
 pub enum SceneChangeEvent<T> {
