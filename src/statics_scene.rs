@@ -5,6 +5,8 @@ use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::surface::Surface;
 use std::io::Result;
 use std::path::Path;
+use std::fs::File;
+
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::tiledata::{TileDataReader, StaticTileData};
 
@@ -18,7 +20,7 @@ static MAX_Y:u32 = 4;
 
 
 pub struct StaticsScene {
-    reader: Result<ArtReader>,
+    reader: Result<ArtReader<File>>,
     data: Result<TileDataReader>,
     index: u32,
     texture: Option<Texture>,

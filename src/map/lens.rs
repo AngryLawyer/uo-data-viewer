@@ -1,4 +1,5 @@
 use uorustlibs::map::{MapReader, Block, StaticReader, StaticLocation};
+use std::fs::File;
 
 pub struct MapLens {
     pub blocks: Vec<(Option<Block>, Option<Vec<StaticLocation>>)>,
@@ -9,7 +10,7 @@ pub struct MapLens {
 }
 
 impl MapLens {
-    pub fn new(map_reader: &mut MapReader, static_reader: &mut StaticReader, x: u32, y: u32, width: u32, height: u32) -> MapLens {
+    pub fn new(map_reader: &mut MapReader, static_reader: &mut StaticReader<File>, x: u32, y: u32, width: u32, height: u32) -> MapLens {
         let mut blocks = vec![];
         for yy in 0..height {
             for xx in 0..width {
@@ -27,7 +28,7 @@ impl MapLens {
         }
     }
 
-    pub fn update(&self, map_reader: &mut MapReader, static_reader: &mut StaticReader, x: u32, y: u32) -> MapLens {
+    pub fn update(&self, map_reader: &mut MapReader, static_reader: &mut StaticReader<File>, x: u32, y: u32) -> MapLens {
         let difference_x = x as i64 - self.x as i64;
         let difference_y = y as i64 - self.y as i64;
         let mut blocks = vec![];
@@ -42,7 +43,6 @@ impl MapLens {
                 }
             }
         }
-        
         MapLens {
             blocks: blocks,
             x: x,

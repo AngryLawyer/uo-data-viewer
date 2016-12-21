@@ -2,8 +2,12 @@ pub mod lens;
 
 use std::path::Path;
 use std::io::Result;
-use map::lens::MapLens;
+use std::fs::File;
+
 use uorustlibs::map::{MapReader, Block, RadarColReader, StaticReader, StaticLocation};
+
+use map::lens::MapLens;
+
 
 //FIXME: Unify
 const MAX_BLOCKS_WIDTH: u32 = 1024 / 8;
@@ -11,7 +15,7 @@ const MAX_BLOCKS_HEIGHT: u32 = 768 / 8;
 
 pub struct Facet {
     map_reader: Result<MapReader>,
-    static_reader: Result<StaticReader>,
+    static_reader: Result<StaticReader<File>>,
     pub x: u32,
     pub y: u32,
     map_lens: Option<MapLens>
