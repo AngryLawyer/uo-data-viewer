@@ -2,10 +2,10 @@ use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::render::{Renderer, Texture};
 use sdl2::rect::Rect;
 use sdl2::surface::Surface;
-use sdl2_ttf::Font;
+use sdl2::ttf::Font;
 
 pub struct TextRenderer<'a> {
-    font: &'a Font<'a>
+    font: &'a Font<'a, 'a>
 }
 
 impl<'a> TextRenderer<'a> {

@@ -6,7 +6,7 @@ use sdl2::render::{Renderer, Texture, TextureQuery};
 use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2_ttf::Font;
+use sdl2::ttf::Font;
 
 pub struct TitleScene {
     text: Texture

@@ -1,10 +1,11 @@
 extern crate sdl2;
-extern crate sdl2_ttf;
 extern crate sdl2_engine_helpers;
 extern crate uorustlibs;
 
 mod engine;
+mod text_renderer;
 mod scene;
+
 mod title_scene;
 mod skills_scene;
 mod tile_scene;
@@ -12,7 +13,6 @@ mod statics_scene;
 mod hues_scene;
 mod map_scene;
 mod gump_scene;
-mod text_renderer;
 mod map;
 
 use std::path::Path;
@@ -20,7 +20,7 @@ use std::path::Path;
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
-    let ttf_subsystem = sdl2_ttf::init().unwrap();
+    let ttf_subsystem = sdl2::ttf::init().unwrap();
 
     let window = video_subsystem.window("UO Data Viewer", 1024, 768)
         .position_centered()
@@ -59,7 +59,7 @@ pub fn main() {
             },
             scene::SceneName::GumpScene => {
                 gump_scene::GumpScene::new(renderer, engine_data)
-            },
+            }
         }
     }, &mut renderer, &mut engine_data);
 }
