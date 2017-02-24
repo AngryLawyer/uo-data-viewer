@@ -44,7 +44,7 @@ pub struct MapScene {
     texture: Option<Texture>,
 }
 
-pub fn draw_heightmap_block<'a>(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
+pub fn draw_heightmap_block(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'static> {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
         for y in 0..8 {
@@ -61,7 +61,7 @@ pub fn draw_heightmap_block<'a>(block: &Block, statics: &Vec<StaticLocation>, ra
     surface
 }
 
-pub fn draw_radarcol_block<'a>(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
+pub fn draw_radarcol_block(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'static> {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
         for y in 0..8 {
@@ -82,7 +82,7 @@ pub fn draw_radarcol_block<'a>(block: &Block, statics: &Vec<StaticLocation>, rad
     surface
 }
 
-pub fn draw_statics_block<'a>(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'a> {
+pub fn draw_statics_block(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'static> {
     let mut surface = draw_radarcol_block(block, statics, radar_cols);
     let mut last_height_locs = vec![-127; 64];
     surface.with_lock_mut(|bitmap| {
