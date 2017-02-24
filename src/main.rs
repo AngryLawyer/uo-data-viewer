@@ -13,6 +13,7 @@ mod statics_scene;
 mod hues_scene;
 mod map_scene;
 mod gump_scene;
+mod anim_scene;
 mod map;
 
 use std::path::Path;
@@ -59,7 +60,10 @@ pub fn main() {
             },
             scene::SceneName::GumpScene => {
                 gump_scene::GumpScene::new(renderer, engine_data)
-            }
+            },
+            scene::SceneName::AnimScene => {
+                anim_scene::AnimScene::new(renderer, engine_data)
+            },
         }
     }, &mut renderer, &mut engine_data);
 }

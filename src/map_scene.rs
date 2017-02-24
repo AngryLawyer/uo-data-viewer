@@ -99,7 +99,7 @@ pub fn draw_statics_block(block: &Block, statics: &Vec<StaticLocation>, radar_co
                 bitmap[lookup * 4 + 1] = b;
                 bitmap[lookup * 4 + 2] = g;
                 bitmap[lookup * 4 + 3] = r;
-                
+
                 last_height_locs[lookup] = stat.altitude;
             }
         }
