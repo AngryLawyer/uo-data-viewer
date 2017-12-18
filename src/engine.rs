@@ -1,8 +1,8 @@
 use sdl2::EventPump;
 use sdl2::event::Event;
-use sdl2::render::Renderer;
 use scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2_engine_helpers::game_loop::GameLoop;
+use sdl2::render::{WindowCanvas};
 
 use text_renderer::TextRenderer;
 // TODO: Move EngineData into its own hoojama
@@ -35,8 +35,8 @@ impl<SceneChangeParamsT, EngineDataT> Engine<SceneChangeParamsT, EngineDataT> {
         }
     }
 
-    pub fn run<F>(&mut self, mut scenebuilder: F, renderer: &mut Renderer, engine_data: &mut EngineDataT)
-        where F: FnMut(SceneChangeParamsT, &mut Renderer, &mut EngineDataT) -> BoxedScene<SceneChangeParamsT, EngineDataT> {
+    pub fn run<F>(&mut self, mut scenebuilder: F, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT)
+        where F: FnMut(SceneChangeParamsT, &mut WindowCanvas, &mut EngineDataT) -> BoxedScene<SceneChangeParamsT, EngineDataT> {
         let mut event_pump = self.event_pump.take().unwrap();
         let mut scene_stack = self.scene_stack.take().unwrap();
         self.game_loop.run(|frame| {

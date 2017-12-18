@@ -7,14 +7,14 @@ mod text_renderer;
 mod scene;
 
 mod title_scene;
-mod skills_scene;
+/*mod skills_scene;
 mod tile_scene;
 mod statics_scene;
 mod hues_scene;
 mod map_scene;
 mod gump_scene;
 mod anim_scene;
-mod map;
+mod map;*/
 
 use std::path::Path;
 
@@ -29,18 +29,20 @@ pub fn main() {
         .build()
         .unwrap();
 
-    let mut renderer = window.renderer().build().unwrap();
+    let mut canvas = window.into_canvas().accelerated().build().unwrap();
+    let texture_creator = canvas.texture_creator();
+
     let font_path = Path::new("./assets/Bretan.otf");
     let font = ttf_subsystem.load_font(font_path, 16).unwrap();
     let text_renderer = text_renderer::TextRenderer::new(&font);
 
     let event_pump = sdl_context.event_pump().unwrap();
     let mut engine_data = engine::EngineData::new(text_renderer);
-    let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&mut renderer, &mut engine_data));
+    let mut engine = engine::Engine::new(30, event_pump, title_scene::TitleScene::new(&mut canvas, &mut engine_data));
 
     engine.run(|scene, renderer, engine_data| {
         match scene {
-            scene::SceneName::TitleScene => {
+            /*scene::SceneName::TitleScene => {
                 title_scene::TitleScene::new(renderer, engine_data)
             },
             scene::SceneName::SkillsScene => {
@@ -63,7 +65,7 @@ pub fn main() {
             },
             scene::SceneName::AnimScene => {
                 anim_scene::AnimScene::new(renderer, engine_data)
-            },
+            },*/
         }
-    }, &mut renderer, &mut engine_data);
+    }, &mut canvas, &mut engine_data);
 }

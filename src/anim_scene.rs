@@ -25,7 +25,7 @@ impl AnimScene {
         let reader = AnimReader::new(&Path::new("./assets/anim.idx"), &Path::new("./assets/Anim.mul"));  //FIXME: Multiple anim muls!
         let mut scene = Box::new(AnimScene {
             reader: reader,
-            index: 0,
+            index: 110,
             page: None,
         });
         scene.create_slice(renderer, engine_data);
