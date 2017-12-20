@@ -8,25 +8,23 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::ttf::Font;
 
-pub struct TitleScene<'b> {
-    text: Texture<'b>
+pub struct TitleScene {
 }
 
-impl<'b> TitleScene<'b> {
-    pub fn new<'a>(renderer: &'b mut WindowCanvas, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
+impl TitleScene {
+    pub fn new<'a>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
         Box::new(TitleScene {
-           text: engine_data.text_renderer.create_text_texture(renderer, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene", Color::RGBA(255, 255, 255, 255))
         })
     }
 }
 
-impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
+impl<'a> Scene<SceneName, EngineData<'a>> for TitleScene {
 
     fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineData) {
-        let TextureQuery {width, height, .. } = self.text.query();
-        let target = Rect::new(0, 0, width, height);
+        //let TextureQuery {width, height, .. } = self.text.query();
+        //let target = Rect::new(0, 0, width, height);
         renderer.clear();
-        renderer.copy(&self.text, None, Some(target)).unwrap();
+        //renderer.copy(&self.text, None, Some(target)).unwrap();
         renderer.present();
     }
 

@@ -2,18 +2,18 @@ use sdl2::EventPump;
 use sdl2::event::Event;
 use scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2_engine_helpers::game_loop::GameLoop;
-use sdl2::render::{WindowCanvas};
+use sdl2::render::{WindowCanvas, TextureCreator};
 
 use text_renderer::TextRenderer;
 // TODO: Move EngineData into its own hoojama
 pub struct EngineData<'a> {
-    pub text_renderer: TextRenderer<'a>
+    pub text_renderer: TextRenderer<'a>,
 }
 
 impl<'a> EngineData<'a> {
     pub fn new(text_renderer: TextRenderer<'a>) -> EngineData<'a> {
         EngineData {
-            text_renderer: text_renderer
+            text_renderer,
         }
     }
 }

@@ -1,5 +1,5 @@
 use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::render::{Canvas, Texture, WindowCanvas};
+use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::rect::Rect;
 use sdl2::surface::Surface;
 use sdl2::ttf::Font;
@@ -34,8 +34,8 @@ impl<'a> TextRenderer<'a> {
         surface
     }
 
-    pub fn create_text_texture<'b>(&self, renderer: &'b mut WindowCanvas, text: &str, color: Color) -> Texture<'b> {
+    pub fn create_text_texture<'b, T>(&self, texture_creator: &'b TextureCreator<T>, text: &str, color: Color) -> Texture<'b> {
         let surface = self.create_text(text, color);
-        renderer.texture_creator().create_texture_from_surface(&surface).unwrap()
+        texture_creator.create_texture_from_surface(&surface).unwrap()
     }
 }

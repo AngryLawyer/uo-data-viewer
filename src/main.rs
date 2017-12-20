@@ -1,6 +1,6 @@
 extern crate sdl2;
-extern crate sdl2_engine_helpers;
 extern crate uorustlibs;
+extern crate sdl2_engine_helpers;
 
 mod engine;
 mod text_renderer;
@@ -35,6 +35,7 @@ pub fn main() {
     let font_path = Path::new("./assets/Bretan.otf");
     let font = ttf_subsystem.load_font(font_path, 16).unwrap();
     let text_renderer = text_renderer::TextRenderer::new(&font);
+    let texture_creator = canvas.texture_creator();
 
     let event_pump = sdl_context.event_pump().unwrap();
     let mut engine_data = engine::EngineData::new(text_renderer);
@@ -42,9 +43,9 @@ pub fn main() {
 
     engine.run(|scene, renderer, engine_data| {
         match scene {
-            /*scene::SceneName::TitleScene => {
+            scene::SceneName::TitleScene => {
                 title_scene::TitleScene::new(renderer, engine_data)
-            },
+            },/*
             scene::SceneName::SkillsScene => {
                 skills_scene::SkillsScene::new(renderer, engine_data)
             },

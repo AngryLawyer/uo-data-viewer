@@ -1,10 +1,10 @@
-use sdl2::render::{Renderer};
+use sdl2::render::{WindowCanvas};
 use sdl2::event::Event;
-pub type BoxedScene<SceneChangeParamsT, EngineDataT> = Box<Scene<SceneChangeParamsT, EngineDataT> + 'static>;
+pub type BoxedScene<SceneChangeParamsT, EngineDataT> = Box<Scene<SceneChangeParamsT, EngineDataT>>;
 
 pub trait Scene<SceneChangeParamsT, EngineDataT> {
-    fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineDataT);
-    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
+    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT);
+    fn handle_event(&mut self, event: &Event, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
 }
 
 // FIXME: This should live elsewhere
@@ -55,7 +55,7 @@ impl<SceneChangeParamsT, EngineDataT> SceneStack<SceneChangeParamsT, EngineDataT
         self.scenes.pop()
     }
 
-    pub fn render(&mut self, renderer: &mut Renderer, engine_data: &mut EngineDataT) {
+    pub fn render(&mut self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT) {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(scene) => {
@@ -66,7 +66,7 @@ impl<SceneChangeParamsT, EngineDataT> SceneStack<SceneChangeParamsT, EngineDataT
         }
     }
 
-    pub fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
+    pub fn handle_event(&mut self, event: &Event, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {

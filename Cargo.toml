@@ -10,7 +10,7 @@ features = ["ttf"]
 
 [dependencies.uo-rust-libs]
 #git = "https://github.com/AngryLawyer/uo-rust-libs.git"
-path = "/Users/tony/Projects/uo-rust-libs"
+path = "/home/tony/Projects/uo-rust-libs"
 
 [dependencies.sdl2-engine-helpers]
 git = "https://github.com/AngryLawyer/rust-sdl2-engine-helpers.git"
