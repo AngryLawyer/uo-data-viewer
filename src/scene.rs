@@ -1,6 +1,6 @@
 use sdl2::render::{WindowCanvas};
 use sdl2::event::Event;
-pub type BoxedScene<SceneChangeParamsT, EngineDataT> = Box<Scene<SceneChangeParamsT, EngineDataT>>;
+pub type BoxedScene<'a, SceneChangeParamsT, EngineDataT> = Box<Scene<SceneChangeParamsT, EngineDataT> + 'a>;
 
 pub trait Scene<SceneChangeParamsT, EngineDataT> {
     fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT);
@@ -25,13 +25,13 @@ pub enum SceneChangeEvent<T> {
     PopScene,
 }
 
-pub struct SceneStack<SceneChangeParamsT, EngineDataT> {
-    scenes: Vec<BoxedScene<SceneChangeParamsT, EngineDataT>>
+pub struct SceneStack<'a, SceneChangeParamsT, EngineDataT> {
+    scenes: Vec<BoxedScene<'a, SceneChangeParamsT, EngineDataT>>
 }
 
-impl<SceneChangeParamsT, EngineDataT> SceneStack<SceneChangeParamsT, EngineDataT> {
+impl<'a, SceneChangeParamsT, EngineDataT> SceneStack<'a, SceneChangeParamsT, EngineDataT> {
 
-    pub fn new() -> SceneStack<SceneChangeParamsT, EngineDataT> {
+    pub fn new() -> SceneStack<'a, SceneChangeParamsT, EngineDataT> {
         SceneStack {
             scenes: vec![]
         }
@@ -41,17 +41,17 @@ impl<SceneChangeParamsT, EngineDataT> SceneStack<SceneChangeParamsT, EngineDataT
         self.scenes.len() == 0
     }
 
-    pub fn push(&mut self, scene: BoxedScene<SceneChangeParamsT, EngineDataT>) {
+    pub fn push(&mut self, scene: BoxedScene<'a, SceneChangeParamsT, EngineDataT>) {
         self.scenes.push(scene)
     }
 
-    pub fn swap(&mut self, scene: BoxedScene<SceneChangeParamsT, EngineDataT>) -> Option<BoxedScene<SceneChangeParamsT, EngineDataT>> {
+    pub fn swap(&mut self, scene: BoxedScene<'a, SceneChangeParamsT, EngineDataT>) -> Option<BoxedScene<'a, SceneChangeParamsT, EngineDataT>> {
         let old_scene = self.scenes.pop();
         self.scenes.push(scene);
         old_scene
     }
 
-    pub fn pop(&mut self) -> Option<BoxedScene<SceneChangeParamsT, EngineDataT>> {
+    pub fn pop(&mut self) -> Option<BoxedScene<'a, SceneChangeParamsT, EngineDataT>> {
         self.scenes.pop()
     }
 
