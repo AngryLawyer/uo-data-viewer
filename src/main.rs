@@ -7,8 +7,8 @@ mod text_renderer;
 mod scene;
 
 mod title_scene;
-/*mod skills_scene;
-mod tile_scene;
+mod skills_scene;
+/*mod tile_scene;
 mod statics_scene;
 mod hues_scene;
 mod map_scene;
@@ -45,10 +45,10 @@ pub fn main() {
         match scene {
             scene::SceneName::TitleScene => {
                 title_scene::TitleScene::new(renderer, engine_data, texture_creator)
-            },/*
-            scene::SceneName::SkillsScene => {
-                skills_scene::SkillsScene::new(renderer, engine_data)
             },
+            scene::SceneName::SkillsScene => {
+                skills_scene::SkillsScene::new(renderer, engine_data, texture_creator)
+            },/*
             scene::SceneName::TileScene => {
                 tile_scene::TileScene::new(renderer, engine_data)
             },

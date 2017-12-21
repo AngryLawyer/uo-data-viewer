@@ -1,22 +1,21 @@
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use engine::EngineData;
-use text_renderer::TextRenderer;
-use sdl2::pixels::Color;
-use std::io::Result;
+use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::path::Path;
+use text_renderer::TextRenderer;
 use uorustlibs::skills::Skills;
 
-use sdl2::render::{Renderer, Texture, TextureQuery};
-use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
+use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
 
-pub struct SkillsScene {
-    pages: Vec<Texture>,
+pub struct SkillsScene<'b> {
+    pages: Vec<Texture<'b>>,
 }
 
-impl SkillsScene {
-    pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
+impl<'b> SkillsScene<'b> {
+    pub fn new<'a, T>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<T>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
         let skills = Skills::new(&Path::new("./assets/skills.idx"), &Path::new("./assets/skills.mul"));
         let text = match skills {
             Ok(skills) => {
@@ -29,13 +28,13 @@ impl SkillsScene {
                         };
                         format!("{} {}", glyph, skill.name)
                     }).collect();
-                    engine_data.text_renderer.create_text_texture(renderer, &skills.join("\n"), Color::RGBA(255, 255, 255, 255))
+                    engine_data.text_renderer.create_text_texture(texture_creator, &skills.join("\n"), Color::RGBA(255, 255, 255, 255))
                 }).collect();
                 items
             },
             Err(error) => {
                 let text = format!("{}", error);
-                let texture = engine_data.text_renderer.create_text_texture(renderer, &text, Color::RGBA(255, 255, 255, 255));
+                let texture = engine_data.text_renderer.create_text_texture(texture_creator, &text, Color::RGBA(255, 255, 255, 255));
                 vec![texture]
             }
         };
@@ -45,8 +44,8 @@ impl SkillsScene {
     }
 }
 
-impl<SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene {
-    fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b> {
+    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineData) {
         renderer.clear();
         let mut last_width = 0;
         for page in self.pages.iter() {
@@ -58,7 +57,7 @@ impl<SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, renderer: &mut WindowCanvas, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)

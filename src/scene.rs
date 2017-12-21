@@ -10,8 +10,8 @@ pub trait Scene<SceneChangeParamsT, EngineDataT> {
 // FIXME: This should live elsewhere
 pub enum SceneName {
     TitleScene,
-/*    SkillsScene,
-    TileScene,
+    SkillsScene,
+/*    TileScene,
     StaticsScene,
     HuesScene,
     MapScene,

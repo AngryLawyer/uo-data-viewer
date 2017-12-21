@@ -35,10 +35,10 @@ impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
             },
-            /*Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
+            Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
                 Some(SceneChangeEvent::PushScene(SceneName::SkillsScene))
             },
-            Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
+            /*Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
                 Some(SceneChangeEvent::PushScene(SceneName::TileScene))
             },
             Event::KeyDown { keycode: Some(Keycode::Num3), .. } => {
