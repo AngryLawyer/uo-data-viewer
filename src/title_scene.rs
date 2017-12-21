@@ -7,15 +7,18 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::ttf::Font;
+use sdl2::video::WindowContext;
 
 pub struct TitleScene<'b> {
-    text: Texture<'b>
+    text: Texture<'b>,
+    texture_creator: &'b TextureCreator<WindowContext>,
 }
 
 impl<'b> TitleScene<'b> {
-    pub fn new<'a, T>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<T>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
+    pub fn new<'a>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
         Box::new(TitleScene {
-            text: engine_data.text_renderer.create_text_texture(texture_creator, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene", Color::RGBA(255, 255, 255, 255))
+            text: engine_data.text_renderer.create_text_texture(texture_creator, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene", Color::RGBA(255, 255, 255, 255)),
+            texture_creator
         })
     }
 }
@@ -38,9 +41,9 @@ impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
             Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
                 Some(SceneChangeEvent::PushScene(SceneName::SkillsScene))
             },
-            /*Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
+            Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
                 Some(SceneChangeEvent::PushScene(SceneName::TileScene))
-            },
+            },/*
             Event::KeyDown { keycode: Some(Keycode::Num3), .. } => {
                 Some(SceneChangeEvent::PushScene(SceneName::StaticsScene))
             },

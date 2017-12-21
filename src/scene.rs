@@ -11,8 +11,8 @@ pub trait Scene<SceneChangeParamsT, EngineDataT> {
 pub enum SceneName {
     TitleScene,
     SkillsScene,
-/*    TileScene,
-    StaticsScene,
+    TileScene,
+/*    StaticsScene,
     HuesScene,
     MapScene,
     GumpScene,

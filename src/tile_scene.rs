@@ -10,24 +10,26 @@ use std::fs::File;
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::tiledata::{TileDataReader, MapTileData};
 
-use sdl2::render::{Renderer, Texture, TextureQuery};
+use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
 use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::video::WindowContext;
 
 static MAX_X:u32 = 20;
 static MAX_Y:u32 = 10;
 
-pub struct TileScene {
+pub struct TileScene<'a> {
+    texture_creator: &'a TextureCreator<WindowContext>,
     reader: Result<ArtReader<File>>,
     data: Result<TileDataReader>,
     index: u32,
-    texture: Option<Texture>,
+    texture: Option<Texture<'a>>,
     tile_data: Vec<Result<MapTileData>>
 }
 
-impl TileScene {
-    pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
+impl<'a> TileScene<'a> {
+    pub fn new<'b>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, SceneName, EngineData<'b>> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let data = TileDataReader::new(&Path::new("./assets/tiledata.mul"));
         let mut scene = Box::new(TileScene {
@@ -36,13 +38,14 @@ impl TileScene {
             index: 0,
             texture: None,
             tile_data: vec![],
+            texture_creator
         });
-        scene.create_slice(renderer, engine_data);
+        scene.create_slice(engine_data);
 
         scene
     }
 
-    fn create_slice(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+    fn create_slice(&mut self, engine_data: &mut EngineData) {
         self.tile_data = vec![];
         match (&mut self.reader, &mut self.data) {
             (&mut Ok(ref mut reader), &mut Ok(ref mut data)) => {
@@ -57,7 +60,8 @@ impl TileScene {
                         let index = start + x + (y * MAX_X);
                         match maybe_tile {
                             Ok(tile) => {
-                                let surface = tile.to_surface();
+                                let image = tile.to_image();
+                                let surface = Surface::new(image.width(), image.height(), PixelFormatEnum::RGBA8888).expect("Failed to create surface");
                                 surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, 44, 44)));
                             },
                             _ => ()
@@ -75,6 +79,8 @@ impl TileScene {
                 self.texture = Some(texture);
             }
         }
+        let texture = engine_data.text_renderer.create_text_texture(self.texture_creator, "Could not create slice", Color::RGBA(255, 255, 255, 255));
+        self.texture = Some(texture);
     }
 
     fn handle_click(&mut self, x: i32, y: i32) {
@@ -94,8 +100,8 @@ impl TileScene {
     }
 }
 
-impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
-    fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
+    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineData) {
         renderer.clear();
         match self.texture {
             Some(ref texture) => {
@@ -106,7 +112,7 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, renderer: &mut WindowCanvas, engine_data: &mut EngineData<'b>) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
@@ -114,13 +120,13 @@ impl<'a> Scene<SceneName, EngineData<'a>> for TileScene {
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
                 if self.index > 0 {
                     self.index -= 1;
-                    self.create_slice(renderer, engine_data);
+                    self.create_slice(engine_data);
                 }
                 None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
                 self.index += 1;
-                self.create_slice(renderer, engine_data);
+                self.create_slice(engine_data);
                 None
             },
             Event::MouseButtonDown { x: x, y: y, .. } => {

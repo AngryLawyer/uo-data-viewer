@@ -8,8 +8,8 @@ mod scene;
 
 mod title_scene;
 mod skills_scene;
-/*mod tile_scene;
-mod statics_scene;
+mod tile_scene;
+/*mod statics_scene;
 mod hues_scene;
 mod map_scene;
 mod gump_scene;
@@ -48,10 +48,10 @@ pub fn main() {
             },
             scene::SceneName::SkillsScene => {
                 skills_scene::SkillsScene::new(renderer, engine_data, texture_creator)
-            },/*
-            scene::SceneName::TileScene => {
-                tile_scene::TileScene::new(renderer, engine_data)
             },
+            scene::SceneName::TileScene => {
+                tile_scene::TileScene::new(renderer, engine_data, texture_creator)
+            },/*
             scene::SceneName::StaticsScene => {
                 statics_scene::StaticsScene::new(renderer, engine_data)
             },

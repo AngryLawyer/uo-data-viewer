@@ -56,8 +56,7 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
                                 scene_stack.push(scenebuilder(scene, renderer, engine_data))
                             },
                             Some(SceneChangeEvent::SwapScene(scene)) => {
-                                scene_stack.pop();
-                                scene_stack.push(scenebuilder(scene, renderer, engine_data))
+                                scene_stack.swap(scenebuilder(scene, renderer, engine_data));
                             },
                             _ => ()
                         }

@@ -9,13 +9,15 @@ use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
+use sdl2::video::WindowContext;
 
 pub struct SkillsScene<'b> {
+    texture_creator: &'b TextureCreator<WindowContext>,
     pages: Vec<Texture<'b>>,
 }
 
 impl<'b> SkillsScene<'b> {
-    pub fn new<'a, T>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<T>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
+    pub fn new<'a>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
         let skills = Skills::new(&Path::new("./assets/skills.idx"), &Path::new("./assets/skills.mul"));
         let text = match skills {
             Ok(skills) => {
@@ -40,6 +42,7 @@ impl<'b> SkillsScene<'b> {
         };
         Box::new(SkillsScene {
             pages: text,
+            texture_creator
         })
     }
 }
