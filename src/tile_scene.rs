@@ -1,6 +1,7 @@
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use engine::EngineData;
 use text_renderer::TextRenderer;
+use image_convert::image_to_surface;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::surface::Surface;
 use std::io::Result;
@@ -61,7 +62,7 @@ impl<'a> TileScene<'a> {
                         match maybe_tile {
                             Ok(tile) => {
                                 let image = tile.to_image();
-                                let surface = Surface::new(image.width(), image.height(), PixelFormatEnum::RGBA8888).expect("Failed to create surface");
+                                let surface = image_to_surface(&image);
                                 surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, 44, 44)));
                             },
                             _ => ()
@@ -72,15 +73,13 @@ impl<'a> TileScene<'a> {
                     }
                 }
 
-                self.texture = Some(renderer.create_texture_from_surface(&dest).unwrap());
+                self.texture = Some(self.texture_creator.create_texture_from_surface(&dest).unwrap());
             },
             _ => {
-                let texture = engine_data.text_renderer.create_text_texture(renderer, "Could not create slice", Color::RGBA(255, 255, 255, 255));
+                let texture = engine_data.text_renderer.create_text_texture(self.texture_creator, "Could not create slice", Color::RGBA(255, 255, 255, 255));
                 self.texture = Some(texture);
             }
         }
-        let texture = engine_data.text_renderer.create_text_texture(self.texture_creator, "Could not create slice", Color::RGBA(255, 255, 255, 255));
-        self.texture = Some(texture);
     }
 
     fn handle_click(&mut self, x: i32, y: i32) {

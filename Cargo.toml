@@ -4,6 +4,9 @@ name = "uo-data-viewer"
 version = "0.0.1"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
 
+[dependencies]
+image = "0.18"
+
 [dependencies.sdl2]
 version = "0.31.0"
 features = ["ttf"]

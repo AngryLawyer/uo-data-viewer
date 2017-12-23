@@ -1,10 +1,12 @@
 extern crate sdl2;
 extern crate uorustlibs;
 extern crate sdl2_engine_helpers;
+extern crate image;
 
 mod engine;
 mod text_renderer;
 mod scene;
+mod image_convert;
 
 mod title_scene;
 mod skills_scene;
