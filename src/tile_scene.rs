@@ -1,6 +1,5 @@
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use engine::EngineData;
-use text_renderer::TextRenderer;
 use image_convert::image_to_surface;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::surface::Surface;
@@ -11,7 +10,7 @@ use std::fs::File;
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::tiledata::{TileDataReader, MapTileData};
 
-use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
+use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -30,7 +29,7 @@ pub struct TileScene<'a> {
 }
 
 impl<'a> TileScene<'a> {
-    pub fn new<'b>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, SceneName, EngineData<'b>> {
+    pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, SceneName, EngineData<'b>> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let data = TileDataReader::new(&Path::new("./assets/tiledata.mul"));
         let mut scene = Box::new(TileScene {
@@ -63,12 +62,12 @@ impl<'a> TileScene<'a> {
                             Ok(tile) => {
                                 let image = tile.to_image();
                                 let surface = image_to_surface(&image);
-                                surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, 44, 44)));
+                                surface.blit(None, &mut dest, Some(Rect::new(44 * x as i32, (44 + 16) * y as i32, 44, 44))).expect("Failed to blit texture");
                             },
                             _ => ()
                         };
                         let label = engine_data.text_renderer.create_text(&format!("{}", index), Color::RGBA(255, 255, 255, 255));
-                        label.blit(None, &mut dest, Some(Rect::new(44 * x as i32, ((44 + 16) * y as i32) + 44, label.width(), label.height())));
+                        label.blit(None, &mut dest, Some(Rect::new(44 * x as i32, ((44 + 16) * y as i32) + 44, label.width(), label.height()))).expect("Failed to blit texture");
                         self.tile_data.push(data.read_map_tile_data(index));
                     }
                 }
@@ -100,7 +99,7 @@ impl<'a> TileScene<'a> {
 }
 
 impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
-    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineData) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData) {
         renderer.clear();
         match self.texture {
             Some(ref texture) => {
@@ -111,7 +110,7 @@ impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, renderer: &mut WindowCanvas, engine_data: &mut EngineData<'b>) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData<'b>) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)
@@ -128,7 +127,7 @@ impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
                 self.create_slice(engine_data);
                 None
             },
-            Event::MouseButtonDown { x: x, y: y, .. } => {
+            Event::MouseButtonDown { x, y, .. } => {
                 self.handle_click(x, y);
                 None
             },       

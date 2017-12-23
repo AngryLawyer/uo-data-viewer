@@ -1,7 +1,6 @@
 use engine::EngineData;
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::path::Path;
-use text_renderer::TextRenderer;
 use uorustlibs::skills::Skills;
 
 use sdl2::event::Event;
@@ -12,12 +11,11 @@ use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
 use sdl2::video::WindowContext;
 
 pub struct SkillsScene<'b> {
-    texture_creator: &'b TextureCreator<WindowContext>,
     pages: Vec<Texture<'b>>,
 }
 
 impl<'b> SkillsScene<'b> {
-    pub fn new<'a>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
+    pub fn new<'a>(engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
         let skills = Skills::new(&Path::new("./assets/skills.idx"), &Path::new("./assets/skills.mul"));
         let text = match skills {
             Ok(skills) => {
@@ -42,13 +40,12 @@ impl<'b> SkillsScene<'b> {
         };
         Box::new(SkillsScene {
             pages: text,
-            texture_creator
         })
     }
 }
 
 impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b> {
-    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineData) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData) {
         renderer.clear();
         let mut last_width = 0;
         for page in self.pages.iter() {
@@ -60,7 +57,7 @@ impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b>
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, renderer: &mut WindowCanvas, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)

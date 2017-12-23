@@ -1,31 +1,27 @@
 use scene::{Scene, BoxedScene, SceneChangeEvent, SceneName};
 use engine::EngineData;
-use text_renderer::TextRenderer;
 use sdl2::pixels::Color;
 use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
 use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::ttf::Font;
 use sdl2::video::WindowContext;
 
 pub struct TitleScene<'b> {
     text: Texture<'b>,
-    texture_creator: &'b TextureCreator<WindowContext>,
 }
 
 impl<'b> TitleScene<'b> {
-    pub fn new<'a>(renderer: &mut WindowCanvas, engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
+    pub fn new<'a>(engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
         Box::new(TitleScene {
             text: engine_data.text_renderer.create_text_texture(texture_creator, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene", Color::RGBA(255, 255, 255, 255)),
-            texture_creator
         })
     }
 }
 
 impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
 
-    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineData) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData) {
         let TextureQuery {width, height, .. } = self.text.query();
         let target = Rect::new(0, 0, width, height);
         renderer.clear();
@@ -33,7 +29,7 @@ impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, renderer: &mut WindowCanvas, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 Some(SceneChangeEvent::PopScene)

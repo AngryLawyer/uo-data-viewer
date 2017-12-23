@@ -1,8 +1,8 @@
-use sdl2::EventPump;
-use sdl2::event::Event;
 use scene::{BoxedScene, SceneStack, SceneChangeEvent};
+use sdl2::event::Event;
+use sdl2::EventPump;
+use sdl2::render::WindowCanvas;
 use sdl2_engine_helpers::game_loop::GameLoop;
-use sdl2::render::{WindowCanvas, TextureCreator};
 
 use text_renderer::TextRenderer;
 // TODO: Move EngineData into its own hoojama
@@ -36,10 +36,10 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
     }
 
     pub fn run<F>(&mut self, mut scenebuilder: F, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT)
-        where F: FnMut(SceneChangeParamsT, &mut WindowCanvas, &mut EngineDataT) -> BoxedScene<'a, SceneChangeParamsT, EngineDataT> {
+        where F: FnMut(SceneChangeParamsT, &mut EngineDataT) -> BoxedScene<'a, SceneChangeParamsT, EngineDataT> {
         let mut event_pump = self.event_pump.take().unwrap();
         let mut scene_stack = self.scene_stack.take().unwrap();
-        self.game_loop.run(|frame| {
+        self.game_loop.run(|_frame| {
             let mut ended = false;
             for event in event_pump.poll_iter() {
                 match event {
@@ -47,16 +47,16 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
                         ended = true
                     },
                     _ => {
-                        let scene_event = scene_stack.handle_event(&event, renderer, engine_data);
+                        let scene_event = scene_stack.handle_event(&event, engine_data);
                         match scene_event {
                             Some(SceneChangeEvent::PopScene) => {
                                 scene_stack.pop();
                             },
                             Some(SceneChangeEvent::PushScene(scene)) => {
-                                scene_stack.push(scenebuilder(scene, renderer, engine_data))
+                                scene_stack.push(scenebuilder(scene, engine_data))
                             },
                             Some(SceneChangeEvent::SwapScene(scene)) => {
-                                scene_stack.swap(scenebuilder(scene, renderer, engine_data));
+                                scene_stack.swap(scenebuilder(scene, engine_data));
                             },
                             _ => ()
                         }
