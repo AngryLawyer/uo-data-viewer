@@ -12,6 +12,7 @@ use sdl2::video::WindowContext;
 
 pub struct SkillsScene<'b> {
     pages: Vec<Texture<'b>>,
+    exiting: bool
 }
 
 impl<'b> SkillsScene<'b> {
@@ -40,6 +41,7 @@ impl<'b> SkillsScene<'b> {
         };
         Box::new(SkillsScene {
             pages: text,
+            exiting: false
         })
     }
 }
@@ -57,12 +59,20 @@ impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b>
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData) {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                Some(SceneChangeEvent::PopScene)
+                self.exiting = true
             },
-             _ => None
+             _ => ()
+        }
+    }
+
+    fn think(&mut self, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+        if self.exiting {
+            Some(SceneChangeEvent::PopScene)
+        } else {
+            None
         }
     }
 }

@@ -47,21 +47,22 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
                         ended = true
                     },
                     _ => {
-                        let scene_event = scene_stack.handle_event(&event, engine_data);
-                        match scene_event {
-                            Some(SceneChangeEvent::PopScene) => {
-                                scene_stack.pop();
-                            },
-                            Some(SceneChangeEvent::PushScene(scene)) => {
-                                scene_stack.push(scenebuilder(scene, engine_data))
-                            },
-                            Some(SceneChangeEvent::SwapScene(scene)) => {
-                                scene_stack.swap(scenebuilder(scene, engine_data));
-                            },
-                            _ => ()
-                        }
+                        scene_stack.handle_event(&event, engine_data);
                     }
                 }
+            }
+            let scene_event = scene_stack.think(engine_data);
+            match scene_event {
+                Some(SceneChangeEvent::PopScene) => {
+                    scene_stack.pop();
+                },
+                Some(SceneChangeEvent::PushScene(scene)) => {
+                    scene_stack.push(scenebuilder(scene, engine_data))
+                },
+                Some(SceneChangeEvent::SwapScene(scene)) => {
+                    scene_stack.swap(scenebuilder(scene, engine_data));
+                },
+                _ => ()
             }
             scene_stack.render(renderer, engine_data);
             ended || scene_stack.is_empty()

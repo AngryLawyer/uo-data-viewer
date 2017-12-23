@@ -25,7 +25,8 @@ pub struct TileScene<'a> {
     data: Result<TileDataReader>,
     index: u32,
     texture: Option<Texture<'a>>,
-    tile_data: Vec<Result<MapTileData>>
+    tile_data: Vec<Result<MapTileData>>,
+    exiting: bool,
 }
 
 impl<'a> TileScene<'a> {
@@ -38,7 +39,8 @@ impl<'a> TileScene<'a> {
             index: 0,
             texture: None,
             tile_data: vec![],
-            texture_creator
+            texture_creator,
+            exiting: false
         });
         scene.create_slice(engine_data);
 
@@ -110,28 +112,33 @@ impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData<'b>) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData<'b>){
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                Some(SceneChangeEvent::PopScene)
+                self.exiting = true;
             },
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
                 if self.index > 0 {
                     self.index -= 1;
                     self.create_slice(engine_data);
                 }
-                None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
                 self.index += 1;
                 self.create_slice(engine_data);
-                None
             },
             Event::MouseButtonDown { x, y, .. } => {
                 self.handle_click(x, y);
-                None
             },       
-             _ => None
+             _ => ()
+        }
+    }
+
+    fn think(&mut self, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+        if self.exiting {
+            Some(SceneChangeEvent::PopScene)
+        } else {
+            None
         }
     }
 }

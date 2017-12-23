@@ -4,10 +4,12 @@ pub type BoxedScene<'a, SceneChangeParamsT, EngineDataT> = Box<Scene<SceneChange
 
 pub trait Scene<SceneChangeParamsT, EngineDataT> {
     fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT);
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
+    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT);
+    fn think(&mut self, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
 }
 
 // FIXME: This should live elsewhere
+#[derive(Debug, Copy, Clone)]
 pub enum SceneName {
     TitleScene,
     SkillsScene,
@@ -19,6 +21,7 @@ pub enum SceneName {
     AnimScene*/
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum SceneChangeEvent<T> {
     PushScene(T),
     SwapScene(T),
@@ -66,11 +69,22 @@ impl<'a, SceneChangeParamsT, EngineDataT> SceneStack<'a, SceneChangeParamsT, Eng
         }
     }
 
-    pub fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
+    pub fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT) {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                let event = scene.handle_event(event, engine_data);
+                scene.handle_event(event, engine_data);
+                self.scenes.push(scene);
+            },
+            None => ()
+        }
+    }
+
+    pub fn think(&mut self, engine_data: &mut EngineDataT)  -> Option<SceneChangeEvent<SceneChangeParamsT>> {
+        let maybe_last_scene = self.scenes.pop();
+        match maybe_last_scene {
+            Some(mut scene) => {
+                let event = scene.think(engine_data);
                 self.scenes.push(scene);
                 event
             },
