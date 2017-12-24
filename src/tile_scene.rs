@@ -30,7 +30,7 @@ pub struct TileScene<'a> {
 }
 
 impl<'a> TileScene<'a> {
-    pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, SceneName, EngineData<'b>> {
+    pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, Event, SceneName, EngineData<'b>> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let data = TileDataReader::new(&Path::new("./assets/tiledata.mul"));
         let mut scene = Box::new(TileScene {
@@ -100,7 +100,7 @@ impl<'a> TileScene<'a> {
     }
 }
 
-impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
+impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for TileScene<'a> {
     fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         renderer.clear();
         match self.texture {

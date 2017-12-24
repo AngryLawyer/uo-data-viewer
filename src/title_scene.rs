@@ -13,7 +13,7 @@ pub struct TitleScene<'b> {
 }
 
 impl<'b> TitleScene<'b> {
-    pub fn new<'a>(engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
+    pub fn new<'a>(engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, Event, SceneName, EngineData<'a>> {
         Box::new(TitleScene {
             text: engine_data.text_renderer.create_text_texture(texture_creator, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene", Color::RGBA(255, 255, 255, 255)),
             last_event: None
@@ -21,7 +21,7 @@ impl<'b> TitleScene<'b> {
     }
 }
 
-impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
+impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for TitleScene<'b> {
 
     fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         let TextureQuery {width, height, .. } = self.text.query();

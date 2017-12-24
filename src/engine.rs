@@ -18,14 +18,14 @@ impl<'a> EngineData<'a> {
     }
 }
 
-pub struct Engine<'a, SceneChangeParamsT, EngineDataT> {
+pub struct Engine<'a, EventT, SceneChangeParamsT, EngineDataT> {
     game_loop: GameLoop,
     event_pump: Option<EventPump>,
-    scene_stack: Option<SceneStack<'a, SceneChangeParamsT, EngineDataT>>,
+    scene_stack: Option<SceneStack<'a, EventT, SceneChangeParamsT, EngineDataT>>,
 }
 
-impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineDataT> {
-    pub fn new(fps: u32, event_pump: EventPump, initial_scene: BoxedScene<SceneChangeParamsT, EngineDataT>) -> Engine<SceneChangeParamsT, EngineDataT> {
+impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, Event, SceneChangeParamsT, EngineDataT> {
+    pub fn new(fps: u32, event_pump: EventPump, initial_scene: BoxedScene<Event, SceneChangeParamsT, EngineDataT>) -> Engine<Event, SceneChangeParamsT, EngineDataT> {
         let mut scene_stack = SceneStack::new();
         scene_stack.push(initial_scene);
         Engine {
@@ -36,7 +36,7 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
     }
 
     pub fn run<F>(&mut self, mut scenebuilder: F, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT)
-        where F: FnMut(SceneChangeParamsT, &mut EngineDataT) -> BoxedScene<'a, SceneChangeParamsT, EngineDataT> {
+        where F: FnMut(SceneChangeParamsT, &mut EngineDataT) -> BoxedScene<'a, Event, SceneChangeParamsT, EngineDataT> {
         let mut event_pump = self.event_pump.take().unwrap();
         let mut scene_stack = self.scene_stack.take().unwrap();
         self.game_loop.run(|frame| {

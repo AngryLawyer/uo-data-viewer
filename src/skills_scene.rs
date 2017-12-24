@@ -16,7 +16,7 @@ pub struct SkillsScene<'b> {
 }
 
 impl<'b> SkillsScene<'b> {
-    pub fn new<'a>(engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, SceneName, EngineData<'a>> {
+    pub fn new<'a>(engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, Event, SceneName, EngineData<'a>> {
         let skills = Skills::new(&Path::new("./assets/skills.idx"), &Path::new("./assets/skills.mul"));
         let text = match skills {
             Ok(skills) => {
@@ -46,7 +46,7 @@ impl<'b> SkillsScene<'b> {
     }
 }
 
-impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b> {
+impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for SkillsScene<'b> {
     fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         renderer.clear();
         let mut last_width = 0;
