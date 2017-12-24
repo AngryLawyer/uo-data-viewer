@@ -39,7 +39,7 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
         where F: FnMut(SceneChangeParamsT, &mut EngineDataT) -> BoxedScene<'a, SceneChangeParamsT, EngineDataT> {
         let mut event_pump = self.event_pump.take().unwrap();
         let mut scene_stack = self.scene_stack.take().unwrap();
-        self.game_loop.run(|_frame| {
+        self.game_loop.run(|frame| {
             let mut ended = false;
             for event in event_pump.poll_iter() {
                 match event {
@@ -47,11 +47,11 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
                         ended = true
                     },
                     _ => {
-                        scene_stack.handle_event(&event, engine_data);
+                        scene_stack.handle_event(&event, engine_data, frame);
                     }
                 }
             }
-            let scene_event = scene_stack.think(engine_data);
+            let scene_event = scene_stack.think(engine_data, frame);
             match scene_event {
                 Some(SceneChangeEvent::PopScene) => {
                     scene_stack.pop();
@@ -64,7 +64,7 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, SceneChangeParamsT, EngineD
                 },
                 _ => ()
             }
-            scene_stack.render(renderer, engine_data);
+            scene_stack.render(renderer, engine_data, frame);
             ended || scene_stack.is_empty()
         });
         self.event_pump = Some(event_pump);

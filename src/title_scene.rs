@@ -23,7 +23,7 @@ impl<'b> TitleScene<'b> {
 
 impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
 
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         let TextureQuery {width, height, .. } = self.text.query();
         let target = Rect::new(0, 0, width, height);
         renderer.clear();
@@ -31,7 +31,7 @@ impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData) {
+    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData, _tick: u64) {
         if self.last_event.is_none() {
             self.last_event = match *event {
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
@@ -63,7 +63,7 @@ impl<'a, 'b> Scene<SceneName, EngineData<'a>> for TitleScene<'b> {
         }
     }
 
-    fn think(&mut self, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
         self.last_event.take()
     }
 }

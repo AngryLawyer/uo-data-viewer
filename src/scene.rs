@@ -3,9 +3,9 @@ use sdl2::event::Event;
 pub type BoxedScene<'a, SceneChangeParamsT, EngineDataT> = Box<Scene<SceneChangeParamsT, EngineDataT> + 'a>;
 
 pub trait Scene<SceneChangeParamsT, EngineDataT> {
-    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT);
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT);
-    fn think(&mut self, engine_data: &mut EngineDataT) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
+    fn render(&self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT, tick: u64);
+    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT, tick: u64);
+    fn think(&mut self, engine_data: &mut EngineDataT, tick: u64) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
 }
 
 // FIXME: This should live elsewhere
@@ -58,33 +58,33 @@ impl<'a, SceneChangeParamsT, EngineDataT> SceneStack<'a, SceneChangeParamsT, Eng
         self.scenes.pop()
     }
 
-    pub fn render(&mut self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT) {
+    pub fn render(&mut self, renderer: &mut WindowCanvas, engine_data: &mut EngineDataT, tick: u64) {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(scene) => {
-                scene.render(renderer, engine_data);
+                scene.render(renderer, engine_data, tick);
                 self.scenes.push(scene);
             },
             None => ()
         }
     }
 
-    pub fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT) {
+    pub fn handle_event(&mut self, event: &Event, engine_data: &mut EngineDataT, tick: u64) {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                scene.handle_event(event, engine_data);
+                scene.handle_event(event, engine_data, tick);
                 self.scenes.push(scene);
             },
             None => ()
         }
     }
 
-    pub fn think(&mut self, engine_data: &mut EngineDataT)  -> Option<SceneChangeEvent<SceneChangeParamsT>> {
+    pub fn think(&mut self, engine_data: &mut EngineDataT, tick: u64)  -> Option<SceneChangeEvent<SceneChangeParamsT>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                let event = scene.think(engine_data);
+                let event = scene.think(engine_data, tick);
                 self.scenes.push(scene);
                 event
             },

@@ -47,7 +47,7 @@ impl<'b> SkillsScene<'b> {
 }
 
 impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b> {
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         renderer.clear();
         let mut last_width = 0;
         for page in self.pages.iter() {
@@ -59,7 +59,7 @@ impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b>
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData) {
+    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData, _tick: u64) {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 self.exiting = true
@@ -68,7 +68,7 @@ impl<'b, SceneName, EngineData> Scene<SceneName, EngineData> for SkillsScene<'b>
         }
     }
 
-    fn think(&mut self, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
         if self.exiting {
             Some(SceneChangeEvent::PopScene)
         } else {

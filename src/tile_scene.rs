@@ -101,7 +101,7 @@ impl<'a> TileScene<'a> {
 }
 
 impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         renderer.clear();
         match self.texture {
             Some(ref texture) => {
@@ -112,7 +112,7 @@ impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData<'b>){
+    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData<'b>, _tick: u64){
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                 self.exiting = true;
@@ -129,12 +129,12 @@ impl<'a, 'b> Scene<SceneName, EngineData<'b>> for TileScene<'a> {
             },
             Event::MouseButtonDown { x, y, .. } => {
                 self.handle_click(x, y);
-            },       
+            },
              _ => ()
         }
     }
 
-    fn think(&mut self, _engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
         if self.exiting {
             Some(SceneChangeEvent::PopScene)
         } else {
