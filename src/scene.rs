@@ -4,8 +4,8 @@ pub enum SceneName {
     SkillsScene,
     TileScene,
     StaticsScene,
-/*    HuesScene,
-    MapScene,
+    HuesScene,
+    /*MapScene,
     GumpScene,
     AnimScene*/
 }

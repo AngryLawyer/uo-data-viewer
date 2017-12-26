@@ -12,8 +12,8 @@ mod title_scene;
 mod skills_scene;
 mod tile_scene;
 mod statics_scene;
-/*mod hues_scene;
-mod map_scene;
+mod hues_scene;
+/*mod map_scene;
 mod gump_scene;
 mod anim_scene;
 mod map;*/
@@ -55,10 +55,10 @@ pub fn main() {
             },
             scene::SceneName::StaticsScene => {
                 statics_scene::StaticsScene::new(engine_data, texture_creator)
-            },/*
-            scene::SceneName::HuesScene => {
-                hues_scene::HuesScene::new(renderer, engine_data)
             },
+            scene::SceneName::HuesScene => {
+                hues_scene::HuesScene::new(engine_data, texture_creator)
+            },/*
             scene::SceneName::MapScene => {
                 map_scene::MapScene::new(renderer, engine_data)
             },
