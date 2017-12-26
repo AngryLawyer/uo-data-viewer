@@ -1,4 +1,4 @@
-use scene::{BoxedScene, SceneStack, SceneChangeEvent};
+use sdl2_engine_helpers::scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2::event::Event;
 use sdl2::EventPump;
 use sdl2::render::WindowCanvas;

@@ -1,5 +1,5 @@
 use engine::EngineData;
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use scene::SceneName;
 use std::path::Path;
 use uorustlibs::skills::Skills;
 
@@ -9,6 +9,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
 use sdl2::video::WindowContext;
+use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
 
 pub struct SkillsScene<'b> {
     pages: Vec<Texture<'b>>,
@@ -47,7 +48,7 @@ impl<'b> SkillsScene<'b> {
 }
 
 impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for SkillsScene<'b> {
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &EngineData, _tick: u64) {
         renderer.clear();
         let mut last_width = 0;
         for page in self.pages.iter() {

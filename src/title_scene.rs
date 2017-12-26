@@ -1,4 +1,4 @@
-use scene::{Scene, BoxedScene, SceneChangeEvent, SceneName};
+use scene::SceneName;
 use engine::EngineData;
 use sdl2::pixels::Color;
 use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
@@ -6,6 +6,7 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::video::WindowContext;
+use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
 
 pub struct TitleScene<'b> {
     text: Texture<'b>,
@@ -23,7 +24,7 @@ impl<'b> TitleScene<'b> {
 
 impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for TitleScene<'b> {
 
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &EngineData, _tick: u64) {
         let TextureQuery {width, height, .. } = self.text.query();
         let target = Rect::new(0, 0, width, height);
         renderer.clear();

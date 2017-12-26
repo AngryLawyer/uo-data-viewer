@@ -1,4 +1,4 @@
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use scene::SceneName;
 use engine::EngineData;
 use image_convert::image_to_surface;
 use sdl2::pixels::{Color, PixelFormatEnum};
@@ -15,6 +15,7 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::video::WindowContext;
+use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
 
 static MAX_X:u32 = 20;
 static MAX_Y:u32 = 10;
@@ -101,7 +102,7 @@ impl<'a> TileScene<'a> {
 }
 
 impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for TileScene<'a> {
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &EngineData, _tick: u64) {
         renderer.clear();
         match self.texture {
             Some(ref texture) => {
