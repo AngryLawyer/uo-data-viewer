@@ -5,8 +5,8 @@ pub enum SceneName {
     TileScene,
     StaticsScene,
     HuesScene,
-    /*MapScene,
-    GumpScene,
+    MapScene,
+    /*GumpScene,
     AnimScene*/
 }
 

@@ -1,21 +1,18 @@
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use engine::EngineData;
-use text_renderer::TextRenderer;
-use sdl2::pixels::{Color, PixelFormatEnum};
+use scene::SceneName;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
+use sdl2::pixels::PixelFormatEnum;
+use sdl2::rect::Rect;
+use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::surface::Surface;
+use sdl2::video::WindowContext;
+use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
 use std::io::Result;
 use std::path::Path;
 use uorustlibs::color::{Color16, Color as ColorTrait};
-use uorustlibs::map::{MapReader, Block, RadarColReader, StaticReader, StaticLocation};
 use uorustlibs::map::map_size::{TRAMMEL, FELUCCA, ILSHENAR, MALAS};
-
-use std::io::{Error};
-use sdl2::render::{Renderer, Texture, TextureQuery};
-use sdl2::rect::Rect;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-
-use map::lens::MapLens;
+use uorustlibs::map::{Block, RadarColReader, StaticLocation};
 use map::Facet;
 
 const MAX_BLOCKS_WIDTH: u32 = 1024 / 8;
@@ -36,20 +33,22 @@ const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 4] =
     ("./assets/map3.mul", "./assets/staidx3.mul", "./assets/statics3.mul", MALAS),
 ];
 
-pub struct MapScene {
+pub struct MapScene<'a> {
+    texture_creator: &'a TextureCreator<WindowContext>,
     facet: Facet,
     map_id: u8,
     radar_colors: Result<Vec<Color16>>,
     mode: MapRenderMode,
-    texture: Option<Texture>,
+    texture: Option<Texture<'a>>,
+    exiting: bool
 }
 
-pub fn draw_heightmap_block(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'static> {
+pub fn draw_heightmap_block(block: &Block, _statics: &Vec<StaticLocation>, _radar_cols: &Result<Vec<Color16>>) -> Surface<'static> {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
         for y in 0..8 {
             for x in 0..8 {
-                let target = (x + (y * 8));
+                let target = x + (y * 8);
                 let height = (block.cells[target].altitude as i16 + 128) as u8;
                 bitmap[target * 4] = 255;
                 bitmap[target * 4 + 1] = height;
@@ -61,12 +60,13 @@ pub fn draw_heightmap_block(block: &Block, statics: &Vec<StaticLocation>, radar_
     surface
 }
 
-pub fn draw_radarcol_block(block: &Block, statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'static> {
+pub fn draw_radarcol_block(block: &Block, _statics: &Vec<StaticLocation>, radar_cols: &Result<Vec<Color16>>) -> Surface<'static> {
     let mut surface = Surface::new(8, 8, PixelFormatEnum::RGBA8888).unwrap();
     surface.with_lock_mut(|bitmap| {
         for y in 0..8 {
             for x in 0..8 {
-                let target = (x + (y * 8));
+
+                let target = x + (y * 8);
                 let index = block.cells[target].graphic;
                 let (r, g, b, _) = match radar_cols {
                     &Ok(ref colors) => colors[index as usize].to_rgba(),
@@ -117,8 +117,8 @@ pub fn map_id_to_facet(id: u8) -> Facet {
     Facet::new(&Path::new(map), &Path::new(idx), &Path::new(statics), width / 8, height / 8)
 }
 
-impl MapScene {
-    pub fn new<'a>(renderer: &mut Renderer, engine_data: &mut EngineData<'a>) -> BoxedScene<SceneName, EngineData<'a>> {
+impl<'a> MapScene<'a> {
+    pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, Event, SceneName, EngineData<'b>> {
         let colors = RadarColReader::new(&Path::new("./assets/radarcol.mul"))
             .and_then(|mut reader| reader.read_colors());
 
@@ -128,13 +128,15 @@ impl MapScene {
             texture: None,
             mode: MapRenderMode::HeightMap,
             radar_colors: colors,
+            exiting: false,
+            texture_creator
         });
 
-        scene.draw_page(renderer, engine_data);
+        scene.draw_page(engine_data);
         scene
     }
 
-    pub fn draw_page(&mut self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+    pub fn draw_page(&mut self, _engine_data: &mut EngineData) {
         let lens = self.facet.get_lens();
 
         self.texture = match lens {
@@ -160,15 +162,15 @@ impl MapScene {
                         }
                     }
                 }
-                Some(renderer.create_texture_from_surface(&surface).unwrap())
+                Some(self.texture_creator.create_texture_from_surface(&surface).unwrap())
             },
             &None => None
         }
     }
 }
 
-impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
-    fn render(&self, renderer: &mut Renderer, engine_data: &mut EngineData) {
+impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for MapScene<'a> {
+    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &EngineData, _tick: u64) {
         renderer.clear();
         match self.texture {
             Some(ref texture) => {
@@ -179,58 +181,58 @@ impl<'a> Scene<SceneName, EngineData<'a>> for MapScene {
         renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, renderer: &mut Renderer, engine_data: &mut EngineData) -> Option<SceneChangeEvent<SceneName>> {
+    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData, _tick: u64) {
         match *event {
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                Some(SceneChangeEvent::PopScene)
+                self.exiting = true
             },
             Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
                 if self.facet.x >= STEP_X as u32 {
                     self.facet.x -= STEP_X as u32;
-                    self.draw_page(renderer, engine_data);
+                    self.draw_page(engine_data);
                 }
-                None
             },
             Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
                 self.facet.x += STEP_X as u32;
-                self.draw_page(renderer, engine_data);
-                None
+                self.draw_page(engine_data);
             },
             Event::KeyDown { keycode: Some(Keycode::Up), .. } => {
                 if self.facet.y >= STEP_Y as u32 {
                     self.facet.y -= STEP_Y as u32;
-                    self.draw_page(renderer, engine_data);
+                    self.draw_page(engine_data);
                 }
-                None
             },
             Event::KeyDown { keycode: Some(Keycode::Down), .. } => {
                 self.facet.y += STEP_Y as u32;
-                self.draw_page(renderer, engine_data);
-                None
+                self.draw_page(engine_data);
             },
             Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
                 self.mode = MapRenderMode::HeightMap;
-                self.draw_page(renderer, engine_data);
-                None
+                self.draw_page(engine_data);
             },
             Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
                 self.mode = MapRenderMode::RadarMap;
-                self.draw_page(renderer, engine_data);
-                None
+                self.draw_page(engine_data);
             },
             Event::KeyDown { keycode: Some(Keycode::Num3), .. } => {
                 self.mode = MapRenderMode::StaticsMap;
-                self.draw_page(renderer, engine_data);
-                None
+                self.draw_page(engine_data);
             },
             Event::KeyDown { keycode: Some(Keycode::Tab), .. } => {
                 self.mode = MapRenderMode::HeightMap;
                 self.map_id = (self.map_id + 1) % MAP_DETAILS.len() as u8;
                 self.facet = map_id_to_facet(self.map_id);
-                self.draw_page(renderer, engine_data);
-                None
+                self.draw_page(engine_data);
             },
-             _ => None
+             _ => ()
+        }
+    }
+
+    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
+        if self.exiting {
+            Some(SceneChangeEvent::PopScene)
+        } else {
+            None
         }
     }
 }

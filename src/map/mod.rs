@@ -4,7 +4,7 @@ use std::path::Path;
 use std::io::Result;
 use std::fs::File;
 
-use uorustlibs::map::{MapReader, Block, RadarColReader, StaticReader, StaticLocation};
+use uorustlibs::map::{MapReader, StaticReader};
 
 use map::lens::MapLens;
 

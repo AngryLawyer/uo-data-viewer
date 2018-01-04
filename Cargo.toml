@@ -12,8 +12,7 @@ version = "0.31.0"
 features = ["ttf"]
 
 [dependencies.uo-rust-libs]
-#git = "https://github.com/AngryLawyer/uo-rust-libs.git"
-path = "/home/tony/Projects/uo-rust-libs"
+git = "https://github.com/AngryLawyer/uo-rust-libs.git"
 
 [dependencies.sdl2-engine-helpers]
 git = "https://github.com/AngryLawyer/rust-sdl2-engine-helpers.git"
