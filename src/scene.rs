@@ -6,7 +6,7 @@ pub enum SceneName {
     StaticsScene,
     HuesScene,
     MapScene,
-    /*GumpScene,
-    AnimScene*/
+    GumpScene,
+    /*AnimScene*/
 }
 

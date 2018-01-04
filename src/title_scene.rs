@@ -52,11 +52,11 @@ impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for TitleScene<'b> {
                 },
                 Event::KeyDown { keycode: Some(Keycode::Num5), .. } => {
                     Some(SceneChangeEvent::PushScene(SceneName::MapScene))
-                }, /*
+                },
                 Event::KeyDown { keycode: Some(Keycode::Num6), .. } => {
                     Some(SceneChangeEvent::PushScene(SceneName::GumpScene))
                 },
-                Event::KeyDown { keycode: Some(Keycode::Num7), .. } => {
+                /*Event::KeyDown { keycode: Some(Keycode::Num7), .. } => {
                     Some(SceneChangeEvent::PushScene(SceneName::AnimScene))
                 },*/
                  _ => None
