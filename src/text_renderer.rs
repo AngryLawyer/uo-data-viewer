@@ -1,7 +1,7 @@
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::render::{Texture, TextureCreator};
-use sdl2::rect::Rect;
-use sdl2::surface::Surface;
+use sdl2::rect::{Rect, Point};
+use sdl2::surface::{Surface, SurfaceRef};
 use sdl2::ttf::Font;
 
 pub struct TextRenderer<'a> {
@@ -37,5 +37,11 @@ impl<'a> TextRenderer<'a> {
     pub fn create_text_texture<'b, T>(&self, texture_creator: &'b TextureCreator<T>, text: &str, color: Color) -> Texture<'b> {
         let surface = self.create_text(text, color);
         texture_creator.create_texture_from_surface(&surface).unwrap()
+    }
+
+    pub fn draw_text(&self, target: &mut SurfaceRef, coords: &Point, content: &str) {
+        let label = self.create_text(content, Color::RGBA(255, 255, 255, 255));
+
+        label.blit(None, target, Some(Rect::new(coords.x(), coords.y(), label.width(), label.height()))).expect("Could not blit label to surface");
     }
 }
