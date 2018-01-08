@@ -1,5 +1,5 @@
 use engine::EngineData;
-use image_convert::image_to_surface;
+use image_convert::{image_to_surface, frame_to_surface};
 use scene::SceneName;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -50,12 +50,14 @@ impl<'a> AnimScene<'a> {
         };
         match anim {
             Ok(anim) => {
-                self.textures = anim.frames.iter().enumerate().map(|(idx, frame)| {
+                self.textures = anim.to_frames().enumerate().map(|(idx, frame)| {
                     let mut dest = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
                     dest.fill_rect(None, Color::RGB(0, 0, 0)).unwrap();
-                    dest.fill_rect(Rect::new(offset - frame.image_centre_x as i32, offset - frame.image_centre_y as i32, frame.width as u32, frame.height as u32), Color::RGB(255, 0, 0));
-                    engine_data.text_renderer.draw_text(&mut dest, &Point::new(9, offset as i32 + frame.height as i32 + 16), &format!("{}", self.index));
-                    engine_data.text_renderer.draw_text(&mut dest, &Point::new(9, offset as i32 + frame.height as i32 + 32), &format!("{} / {}", idx, anim.frame_count));
+                    let surface = frame_to_surface(&frame);
+                    surface.blit(None, &mut dest, Some(Rect::new(0, 0, surface.width(), surface.height()))).expect("Could not blit surface");
+
+                    engine_data.text_renderer.draw_text(&mut dest, &Point::new(9, offset as i32 + surface.height() as i32 + 16), &format!("{}", self.index));
+                    engine_data.text_renderer.draw_text(&mut dest, &Point::new(9, offset as i32 + surface.height() as i32 + 32), &format!("{} / {}", idx, anim.frame_count));
                     self.texture_creator.create_texture_from_surface(&dest).unwrap()
                 }).collect::<_>();
             },

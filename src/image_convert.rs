@@ -1,4 +1,4 @@
-use image::RgbaImage;
+use image::{RgbaImage, Frame};
 use sdl2::surface::Surface;
 use sdl2::pixels::PixelFormatEnum;
 
@@ -13,4 +13,8 @@ pub fn image_to_surface(image: &RgbaImage) -> Surface {
         data.copy_from_slice(&copied);
     });
     surface
+}
+
+pub fn frame_to_surface(frame: &Frame) -> Surface {
+    image_to_surface(frame.buffer())
 }
