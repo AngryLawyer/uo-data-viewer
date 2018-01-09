@@ -96,6 +96,16 @@ impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for AnimScene<'a> {
                 self.index += 1;
                 self.create_slice(engine_data);
             },
+            Event::KeyDown { keycode: Some(Keycode::Comma), .. } => {
+                if self.index >= 10 {
+                    self.index -= 10;
+                    self.create_slice(engine_data);
+                }
+            },
+            Event::KeyDown { keycode: Some(Keycode::Period), .. } => {
+                self.index += 10;
+                self.create_slice(engine_data);
+            },
              _ => ()
         }
     }
@@ -105,9 +115,11 @@ impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for AnimScene<'a> {
             return Some(SceneChangeEvent::PopScene);
         }
 
-        self.current_frame += 1;
-        if self.current_frame >= self.textures.len() {
-            self.current_frame = 0;
+        if tick % 2 == 0 {
+            self.current_frame += 1;
+            if self.current_frame >= self.textures.len() {
+                self.current_frame = 0;
+            }
         }
 
         None
