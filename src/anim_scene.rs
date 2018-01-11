@@ -1,5 +1,5 @@
 use engine::EngineData;
-use image_convert::{image_to_surface, frame_to_surface};
+use image_convert::frame_to_surface;
 use scene::SceneName;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -13,10 +13,11 @@ use std::fs::File;
 use std::io::Result;
 use std::path::Path;
 
-use uorustlibs::anim::{AnimReader, AnimGroup,};
+use uorustlibs::anim::AnimReader;
 
 pub struct AnimScene<'a> {
     reader: Result<AnimReader<File>>,
+    file_index: u8,
     index: u32,
     texture_creator: &'a TextureCreator<WindowContext>,
     textures: Vec<Texture<'a>>,
@@ -34,10 +35,27 @@ impl<'a> AnimScene<'a> {
             exiting: false,
             texture_creator,
             current_frame: 0,
+            file_index: 0,
         });
-        scene.create_slice(engine_data);
+        scene.load_reader(&Path::new("./assets/anim.idx"), &Path::new("./assets/Anim.mul"), engine_data);
 
         scene
+    }
+
+    fn load_reader(&mut self, idx: &Path, mul: &Path, engine_data: &mut EngineData) {
+        self.reader = AnimReader::new(idx, mul);
+        self.create_slice(engine_data);
+    }
+
+    fn set_file_index(&mut self, idx: u8, engine_data: &mut EngineData) {
+        self.file_index = idx;
+        let (idx, mul) = match idx {
+            0 => (Path::new("./assets/anim.idx"), Path::new("./assets/Anim.mul")),
+            1 => (Path::new("./assets/anim2.idx"), Path::new("./assets/anim2.mul")),
+            2 => (Path::new("./assets/anim3.idx"), Path::new("./assets/anim3.mul")),
+            _ => panic!("NO")
+        };
+        self.load_reader(&idx, &mul, engine_data);
     }
 
     fn create_slice(&mut self, engine_data: &mut EngineData) {
@@ -65,6 +83,7 @@ impl<'a> AnimScene<'a> {
                 let mut dest = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
                 dest.fill_rect(None, Color::RGB(0, 0, 0)).unwrap();
                 engine_data.text_renderer.draw_text(&mut dest, &Point::new(0, 0), e);
+                engine_data.text_renderer.draw_text(&mut dest, &Point::new(0, 16), &format!("{}", self.index));
                 self.textures = vec![self.texture_creator.create_texture_from_surface(&dest).unwrap()];
             }
         }
@@ -105,6 +124,10 @@ impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for AnimScene<'a> {
             Event::KeyDown { keycode: Some(Keycode::Period), .. } => {
                 self.index += 10;
                 self.create_slice(engine_data);
+            },
+            Event::KeyDown { keycode: Some(Keycode::Tab), .. } => {
+                let idx = self.file_index;
+                self.set_file_index((idx + 1) % 3, engine_data);
             },
              _ => ()
         }
