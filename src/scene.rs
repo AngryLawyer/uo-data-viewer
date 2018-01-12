@@ -7,5 +7,6 @@ pub enum SceneName {
     HuesScene,
     MapScene,
     GumpScene,
-    AnimScene
+    AnimScene,
+    TexMapsScene,
 }

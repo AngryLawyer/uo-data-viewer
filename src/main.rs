@@ -16,6 +16,7 @@ mod hues_scene;
 mod map_scene;
 mod gump_scene;
 mod anim_scene;
+mod texmaps_scene;
 
 mod map;
 
@@ -68,6 +69,9 @@ pub fn main() {
             },
             scene::SceneName::AnimScene => {
                 anim_scene::AnimScene::new(engine_data, texture_creator)
+            },
+            scene::SceneName::TexMapsScene => {
+                texmaps_scene::TexMapsScene::new(engine_data, texture_creator)
             },
         }
     }, &mut canvas, &mut engine_data);
