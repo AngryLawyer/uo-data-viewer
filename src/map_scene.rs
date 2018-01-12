@@ -11,9 +11,8 @@ use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
 use std::io::Result;
 use std::path::Path;
 use uorustlibs::color::{Color16, Color as ColorTrait};
-use uorustlibs::map::map_size::{TRAMMEL, FELUCCA, ILSHENAR, MALAS};
 use uorustlibs::map::{Block, RadarColReader, StaticLocation};
-use map::Facet;
+use map::{Facet, map_id_to_facet, MAP_DETAILS};
 
 const MAX_BLOCKS_WIDTH: u32 = 1024 / 8;
 const MAX_BLOCKS_HEIGHT: u32 = 768 / 8;
@@ -25,13 +24,6 @@ enum MapRenderMode {
     RadarMap,
     StaticsMap,
 }
-
-const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 4] = [
-    ("./assets/map0.mul", "./assets/staidx0.mul", "./assets/statics0.mul", TRAMMEL),
-    ("./assets/map0.mul", "./assets/staidx0.mul", "./assets/statics0.mul", FELUCCA),
-    ("./assets/map2.mul", "./assets/staidx2.mul", "./assets/statics2.mul", ILSHENAR),
-    ("./assets/map3.mul", "./assets/staidx3.mul", "./assets/statics3.mul", MALAS),
-];
 
 pub struct MapScene<'a> {
     texture_creator: &'a TextureCreator<WindowContext>,
@@ -107,16 +99,6 @@ pub fn draw_statics_block(block: &Block, statics: &Vec<StaticLocation>, radar_co
     surface
 }
 
-pub fn map_id_to_facet(id: u8) -> Facet {
-    let corrected_id = if id as usize >= MAP_DETAILS.len() {
-        0
-    } else {
-        id as usize
-    };
-    let (map, idx, statics, (width, height)) = MAP_DETAILS[corrected_id];
-    Facet::new(&Path::new(map), &Path::new(idx), &Path::new(statics), width / 8, height / 8)
-}
-
 impl<'a> MapScene<'a> {
     pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, Event, SceneName, EngineData<'b>> {
         let colors = RadarColReader::new(&Path::new("./assets/radarcol.mul"))
@@ -137,10 +119,10 @@ impl<'a> MapScene<'a> {
     }
 
     pub fn draw_page(&mut self, _engine_data: &mut EngineData) {
-        let lens = self.facet.get_lens();
+        let lens = self.facet.get_lens(MAX_BLOCKS_WIDTH, MAX_BLOCKS_HEIGHT);
 
         self.texture = match lens {
-            &Some(ref lens) => {
+            Some(lens) => {
                 let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
                 let block_drawer = match self.mode {
                     MapRenderMode::HeightMap => draw_heightmap_block,
@@ -164,7 +146,7 @@ impl<'a> MapScene<'a> {
                 }
                 Some(self.texture_creator.create_texture_from_surface(&surface).unwrap())
             },
-            &None => None
+            None => None
         }
     }
 }

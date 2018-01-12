@@ -9,4 +9,5 @@ pub enum SceneName {
     GumpScene,
     AnimScene,
     TexMapsScene,
+    WorldScene,
 }

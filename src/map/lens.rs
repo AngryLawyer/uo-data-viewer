@@ -1,6 +1,7 @@
 use uorustlibs::map::{MapReader, Block, StaticReader, StaticLocation};
 use std::fs::File;
 
+#[derive(Clone)]
 pub struct MapLens {
     pub blocks: Vec<(Option<Block>, Option<Vec<StaticLocation>>)>,
     pub x: u32,
