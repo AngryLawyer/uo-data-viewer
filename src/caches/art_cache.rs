@@ -22,7 +22,7 @@ impl<'a> ArtCache<'a> {
         }
     }
 
-    pub fn get_tile(&mut self, id: u32) -> &Option<Texture<'a>> {
+    pub fn read_tile(&mut self, id: u32) -> &Option<Texture<'a>> {
         if self.tile_cache.contains_key(&id) {
             self.tile_cache.get(&id).unwrap()
         } else {

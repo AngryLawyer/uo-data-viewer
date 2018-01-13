@@ -24,7 +24,7 @@ impl<'b> TitleScene<'b> {
 
 impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for TitleScene<'b> {
 
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &EngineData, _tick: u64) {
+    fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         let TextureQuery {width, height, .. } = self.text.query();
         let target = Rect::new(0, 0, width, height);
         renderer.clear();

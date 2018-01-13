@@ -48,7 +48,7 @@ impl<'b> SkillsScene<'b> {
 }
 
 impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for SkillsScene<'b> {
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &EngineData, _tick: u64) {
+    fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         renderer.clear();
         let mut last_width = 0;
         for page in self.pages.iter() {

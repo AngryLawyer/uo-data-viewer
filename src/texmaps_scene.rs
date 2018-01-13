@@ -78,7 +78,7 @@ impl<'a> TexMapsScene<'a> {
 }
 
 impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for TexMapsScene<'a> {
-    fn render(&self, renderer: &mut WindowCanvas, _engine_data: &EngineData, _tick: u64) {
+    fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         renderer.clear();
         match self.texture {
             Some(ref texture) => {

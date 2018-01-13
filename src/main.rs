@@ -35,7 +35,7 @@ pub fn main() {
         .build()
         .unwrap();
 
-    let mut canvas = window.into_canvas().accelerated().build().unwrap();
+    let mut canvas = window.into_canvas().present_vsync().accelerated().build().unwrap();
 
     let font_path = Path::new("./assets/Bretan.otf");
     let font = ttf_subsystem.load_font(font_path, 16).unwrap();
