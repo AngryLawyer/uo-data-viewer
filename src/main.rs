@@ -20,6 +20,7 @@ mod texmaps_scene;
 mod world_scene;
 
 mod map;
+mod caches;
 
 use std::path::Path;
 
