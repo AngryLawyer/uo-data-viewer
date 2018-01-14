@@ -78,14 +78,13 @@ impl<'a> WorldScene<'a> {
                     let cell = block.cells[y * 8 + x];
                     self.art_cache.read_tile(cell.graphic as u32).as_ref().map(|tile| {
                         let query = tile.query();
-                        let new_context = cell_at(x as i32, y as i32).merge(context);
+                        let new_context = cell_at(x as i32, y as i32).merge(context).transform(0, -cell.altitude as i32);
                         new_context.copy(renderer, &tile, None, Rect::new(0, 0, query.width, query.height));
                     });
                 }
             }
         });
     }
-
 }
 
 impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for WorldScene<'a> {
