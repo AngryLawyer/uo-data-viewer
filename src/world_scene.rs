@@ -9,6 +9,7 @@ use sdl2::render::{WindowCanvas, Texture, TextureCreator};
 use sdl2::surface::Surface;
 use sdl2::video::WindowContext;
 use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
+use sdl2_engine_helpers::transform::TransformContext;
 use std::fs::File;
 use std::io::Result;
 use std::path::Path;
@@ -19,14 +20,31 @@ use caches::art_cache::ArtCache;
 
 const STEP_X: u32 = 1;
 const STEP_Y: u32 = 1;
-const MAX_BLOCKS_WIDTH: u32 = 2;
-const MAX_BLOCKS_HEIGHT: u32 = 2;
+const MAX_BLOCKS_WIDTH: u32 = 6;
+const MAX_BLOCKS_HEIGHT: u32 = 6;
 
 pub struct WorldScene<'a> {
     art_cache: ArtCache<'a>,
     facet: Facet,
     map_id: u8,
     exiting: bool,
+}
+
+fn cell_at(x: i32, y: i32) -> TransformContext {
+    TransformContext::new()
+        .transform(
+            (22 * 7) + (22 * x) - (y * 22),
+            (22 * y) + (x * 22)
+        )
+}
+
+// TODO: Make this less nasty
+fn block_at(x: i32, y: i32) -> TransformContext {
+    TransformContext::new()
+        .transform(
+            (22 * 8) * x - (y * (22 * 8)) + (22 * 16),
+            (22 * 8) * y + (x * (22 * 8)) - (22 * 24)
+        )
 }
 
 impl<'a> WorldScene<'a> {
@@ -46,27 +64,23 @@ impl<'a> WorldScene<'a> {
             for y in 0..lens.height {
                 for x in 0..lens.width {
                     let (ref block, ref statics) = lens.blocks[(x + (y * MAX_BLOCKS_WIDTH)) as usize];
-                    self.draw_block(renderer, block, statics, &Point::new((22 * 8) + (22 * 8) * x as i32 - (y as i32 * (22 * 8)), (22 * 8) * y as i32 + (x as i32 * (22 * 8))));
+                    let transform = block_at(x as i32, y as i32);
+                    self.draw_block(renderer, block, statics, &transform);
                 }
             }
         });
     }
 
-    pub fn draw_block(&mut self, renderer: &mut WindowCanvas, block: &Option<Block>, statics: &Option<Vec<StaticLocation>>, target: &Point){
+    pub fn draw_block(&mut self, renderer: &mut WindowCanvas, block: &Option<Block>, statics: &Option<Vec<StaticLocation>>, context: &TransformContext){
         block.map(|block| {
             for y in 0..8 {
                 for x in 0..8 {
                     let cell = block.cells[y * 8 + x];
                     self.art_cache.read_tile(cell.graphic as u32).as_ref().map(|tile| {
                         let query = tile.query();
-                        let (offset_x, offset_y) = (target.x(), target.y());
-                        renderer.copy(&tile, None, Rect::new((22 * 7) + (22 * x as i32) - (y as i32 * 22) + offset_x, (22 * y as i32) + (x as i32 * 22) + offset_y, query.width, query.height));
+                        let new_context = cell_at(x as i32, y as i32).merge(context);
+                        new_context.copy(renderer, &tile, None, Rect::new(0, 0, query.width, query.height));
                     });
-                    /*self.reader.read_tile(cell.graphic as u32).map(|tile| {
-                        let image = tile.to_image();
-                        let tile_image = image_to_surface(&image);
-                        tile_image.blit(None, &mut surface, Some(Rect::new((22 * 7) + (22 * x as i32) - (y as i32 * 22), (22 * y as i32) + (x as i32 * 22), 44, 44))).expect("Failed to blit texture");
-                    });*/
                 }
             }
         });
@@ -78,12 +92,6 @@ impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for WorldScene<'a> {
     fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
         renderer.clear();
         self.draw_page(renderer);
-        /*match self.texture {
-            Some(ref texture) => {
-                renderer.copy(texture, None, None).unwrap();
-            },
-            None => ()
-        };*/
         renderer.present();
     }
 
