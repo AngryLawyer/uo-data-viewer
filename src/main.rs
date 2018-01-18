@@ -2,6 +2,7 @@ extern crate sdl2;
 extern crate uorustlibs;
 extern crate sdl2_engine_helpers;
 extern crate image;
+extern crate gl;
 
 mod engine;
 mod text_renderer;
@@ -24,6 +25,15 @@ mod caches;
 
 use std::path::Path;
 
+fn find_sdl_gl_driver() -> Option<u32> {
+    for (index, item) in sdl2::render::drivers().enumerate() {
+        if item.name == "opengl" {
+            return Some(index as u32);
+        }
+    }
+    None
+}
+
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -35,7 +45,12 @@ pub fn main() {
         .build()
         .unwrap();
 
-    let mut canvas = window.into_canvas().present_vsync().accelerated().build().unwrap();
+    let mut canvas = window.into_canvas()
+        .index(find_sdl_gl_driver().expect("Could not find an opengl driver - please install one!"))
+        .present_vsync().accelerated().build().unwrap();
+
+    gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
+    canvas.window().gl_set_context_to_current();
 
     let font_path = Path::new("./assets/Bretan.otf");
     let font = ttf_subsystem.load_font(font_path, 16).unwrap();

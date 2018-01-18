@@ -7,6 +7,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::video::WindowContext;
 use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
+use gl;
 
 pub struct TitleScene<'b> {
     text: Texture<'b>,
