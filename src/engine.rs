@@ -1,6 +1,7 @@
 use ggez::timer;
 use scene::{SceneName, SceneStack, SceneChangeEvent, BoxedScene};
 use title_scene;
+use skills_scene;
 /*use sdl2_engine_helpers::scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2::event::Event;
 use sdl2::EventPump;
@@ -94,12 +95,13 @@ impl<'a> Engine<'a> {
             SceneName::TitleScene => {
                 title_scene::TitleScene::new()
             },
+            SceneName::SkillsScene => {
+                skills_scene::SkillsScene::new()
+            },
             _ => {
                 title_scene::TitleScene::new()
             }
-            /*scene::SceneName::SkillsScene => {
-                skills_scene::SkillsScene::new(engine_data, texture_creator)
-            },
+            /*
             scene::SceneName::TileScene => {
                 tile_scene::TileScene::new(engine_data, texture_creator)
             },
