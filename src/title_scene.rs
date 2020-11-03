@@ -1,76 +1,53 @@
-use scene::SceneName;
-use engine::EngineData;
-use sdl2::pixels::Color;
-use sdl2::render::{WindowCanvas, Texture, TextureQuery, TextureCreator};
-use sdl2::rect::Rect;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::video::WindowContext;
-use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
+use scene::{SceneName, SceneChangeEvent, BoxedScene, Scene};
+use cgmath::Point2;
+use ggez::Context;
+use ggez::graphics::{self, Text};
+use ggez::event::{KeyCode, KeyMods};
 
-pub struct TitleScene<'b> {
-    text: Texture<'b>,
+pub struct TitleScene {
+    text: Text,
     last_event: Option<SceneChangeEvent<SceneName>>,
 }
 
-impl<'b> TitleScene<'b> {
-    pub fn new<'a>(engine_data: &mut EngineData<'a>, texture_creator: &'b TextureCreator<WindowContext>) -> BoxedScene<'b, Event, SceneName, EngineData<'a>> {
+impl<'a> TitleScene {
+    pub fn new() -> BoxedScene<'a, SceneName, ()> {
         Box::new(TitleScene {
-            text: engine_data.text_renderer.create_text_texture(texture_creator, "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene\n8. TexMaps Scene\n9. World Scene", Color::RGBA(255, 255, 255, 255)),
+            text: Text::new("1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene\n8. TexMaps Scene\n9. World Scene"),
             last_event: None
         })
     }
 }
 
-impl<'a, 'b> Scene<Event, SceneName, EngineData<'a>> for TitleScene<'b> {
-
-    fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
-        let TextureQuery {width, height, .. } = self.text.query();
-        let target = Rect::new(0, 0, width, height);
-        renderer.clear();
-        renderer.copy(&self.text, None, Some(target)).unwrap();
-        renderer.present();
+impl Scene<SceneName, ()> for TitleScene {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+        graphics::clear(ctx, graphics::BLACK);
+        graphics::draw(ctx, &self.text, (Point2::new(0.0, 0.0), graphics::WHITE));
     }
 
-    fn handle_event(&mut self, event: &Event, _engine_data: &mut EngineData, _tick: u64) {
-        if self.last_event.is_none() {
-            self.last_event = match *event {
-                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                    Some(SceneChangeEvent::PopScene)
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num1), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::SkillsScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num2), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::TileScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num3), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::StaticsScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num4), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::HuesScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num5), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::MapScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num6), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::GumpScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num7), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::AnimScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num8), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::TexMapsScene))
-                },
-                Event::KeyDown { keycode: Some(Keycode::Num9), .. } => {
-                    Some(SceneChangeEvent::PushScene(SceneName::WorldScene))
-                },
-                 _ => None
-            }
-        }
-    }
-
-    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
+    fn update(&mut self, ctx: &mut Context, engine_data: &mut ()) -> Option<SceneChangeEvent<SceneName>> {
         self.last_event.take()
+    }
+
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymods: KeyMods,
+        repeat: bool,
+        engine_data: &mut ()
+    ) {
+        self.last_event = match keycode {
+            KeyCode::Escape => Some(SceneChangeEvent::PopScene),
+            KeyCode::Key1 => Some(SceneChangeEvent::PushScene(SceneName::SkillsScene)),
+            KeyCode::Key2 => Some(SceneChangeEvent::PushScene(SceneName::TileScene)),
+            KeyCode::Key3 => Some(SceneChangeEvent::PushScene(SceneName::StaticsScene)),
+            KeyCode::Key4 => Some(SceneChangeEvent::PushScene(SceneName::HuesScene)),
+            KeyCode::Key5 => Some(SceneChangeEvent::PushScene(SceneName::MapScene)),
+            KeyCode::Key6 => Some(SceneChangeEvent::PushScene(SceneName::GumpScene)),
+            KeyCode::Key7 => Some(SceneChangeEvent::PushScene(SceneName::AnimScene)),
+            KeyCode::Key8 => Some(SceneChangeEvent::PushScene(SceneName::TexMapsScene)),
+            KeyCode::Key9 => Some(SceneChangeEvent::PushScene(SceneName::WorldScene)),
+            _ => None
+        }
     }
 }

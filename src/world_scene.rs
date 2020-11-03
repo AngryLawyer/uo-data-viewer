@@ -49,7 +49,6 @@ fn block_at(x: i32, y: i32) -> TransformContext {
 
 impl<'a> WorldScene<'a> {
     pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, Event, SceneName, EngineData<'b>> {
-        let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul")).expect("Could not load art");
         let scene = Box::new(WorldScene {
             exiting: false,
             map_id: 0,

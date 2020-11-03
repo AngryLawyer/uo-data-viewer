@@ -1,11 +1,12 @@
-extern crate sdl2;
 extern crate uorustlibs;
-extern crate sdl2_engine_helpers;
-extern crate image;
-
+extern crate ggez;
+extern crate cgmath;
+//extern crate image;
 mod engine;
-mod text_renderer;
 mod scene;
+mod title_scene;
+/*
+mod text_renderer;
 mod image_convert;
 
 mod title_scene;
@@ -22,15 +23,15 @@ mod world_scene;
 mod map;
 mod caches;
 
-use std::path::Path;
+use std::path::Path;*/
 
-pub fn main() {
+/*pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let ttf_subsystem = sdl2::ttf::init().unwrap();
 
     let window = video_subsystem.window("UO Data Viewer", 1024, 768)
-        .position_centered()
+Engine        .position_centered()
         .opengl()
         .build()
         .unwrap();
@@ -80,4 +81,24 @@ pub fn main() {
             },
         }
     }, &mut canvas, &mut engine_data);
+}*/
+use ggez::{graphics, Context, ContextBuilder, GameResult};
+use ggez::event::{self, EventHandler};
+
+fn main() {
+    // Make a Context.
+    let (mut ctx, mut event_loop) = ContextBuilder::new("UO Data Viewer", "Angry Lawyer")
+		.build()
+		.expect("Could not create context");
+
+    // Create an instance of your event handler.
+    // Usually, you should provide it with the Context object to
+    // use when setting your game up.
+    let mut my_game = engine::Engine::new(&mut ctx);
+
+    // Run!
+    match event::run(&mut ctx, &mut event_loop, &mut my_game) {
+        Ok(_) => println!("Exited cleanly."),
+        Err(e) => println!("Error occured: {}", e)
+    }
 }
