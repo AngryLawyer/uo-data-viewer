@@ -1,11 +1,14 @@
 extern crate uorustlibs;
 extern crate ggez;
 extern crate cgmath;
-//extern crate image;
+extern crate image;
+
+mod image_convert;
 mod engine;
 mod scene;
 mod title_scene;
 mod skills_scene;
+mod tile_scene;
 /*
 mod text_renderer;
 mod image_convert;
@@ -84,11 +87,13 @@ Engine        .position_centered()
     }, &mut canvas, &mut engine_data);
 }*/
 use ggez::{graphics, Context, ContextBuilder, GameResult};
+use ggez::conf::{WindowSetup, WindowMode};
 use ggez::event::{self, EventHandler};
 
 fn main() {
     // Make a Context.
     let (mut ctx, mut event_loop) = ContextBuilder::new("UO Data Viewer", "Angry Lawyer")
+        .window_setup(WindowSetup::default().title("UO Data Viewer"))
 		.build()
 		.expect("Could not create context");
 

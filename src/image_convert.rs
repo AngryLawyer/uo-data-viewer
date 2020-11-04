@@ -1,20 +1,12 @@
 use image::{RgbaImage, Frame};
-use sdl2::surface::Surface;
-use sdl2::pixels::PixelFormatEnum;
+use ggez::Context;
+use ggez::graphics::Image;
 
-pub fn image_to_surface(image: &RgbaImage) -> Surface {
-    let mut surface = Surface::new(image.width(), image.height(), PixelFormatEnum::RGBA8888).expect("Failed to create surface");
-    surface.with_lock_mut(|data| {
-        let mut copied = image.clone().into_raw();
-        // TODO: This appears to be endian-specific, and should be sorted
-        for chunk in copied.chunks_mut(4) {
-            chunk.reverse();
-        }
-        data.copy_from_slice(&copied);
-    });
-    surface
+pub fn image_to_surface(ctx: &mut Context, image: &RgbaImage) -> Image {
+    let mut copied = image.clone().into_raw();
+    Image::from_rgba8(ctx, image.width() as u16, image.height() as u16, &copied).expect("Failed to create surface")
 }
 
-pub fn frame_to_surface(frame: &Frame) -> Surface {
-    image_to_surface(frame.buffer())
+pub fn frame_to_surface(ctx: &mut Context, frame: &Frame) -> Image{
+    image_to_surface(ctx, frame.buffer())
 }

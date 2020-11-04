@@ -2,6 +2,7 @@ use ggez::timer;
 use scene::{SceneName, SceneStack, SceneChangeEvent, BoxedScene};
 use title_scene;
 use skills_scene;
+use tile_scene;
 /*use sdl2_engine_helpers::scene::{BoxedScene, SceneStack, SceneChangeEvent};
 use sdl2::event::Event;
 use sdl2::EventPump;
@@ -76,7 +77,7 @@ impl<'a, SceneChangeParamsT, EngineDataT> Engine<'a, Event, SceneChangeParamsT, 
     }
 }*/
 use ggez::{graphics, Context, ContextBuilder, GameResult};
-use ggez::event::{self, EventHandler, quit, KeyCode, KeyMods};
+use ggez::event::{self, EventHandler, quit, KeyCode, KeyMods, MouseButton};
 pub struct Engine<'a> {
     scene_stack: Option<SceneStack<'a, SceneName, ()>>,
 }
@@ -90,13 +91,16 @@ impl<'a> Engine<'a> {
         }
     }
 
-    pub fn scenebuilder(&mut self, sceneName: SceneName) -> BoxedScene<'a,  SceneName, ()> {
+    pub fn scenebuilder(&mut self, ctx: &mut Context, sceneName: SceneName) -> BoxedScene<'a,  SceneName, ()> {
         match sceneName {
             SceneName::TitleScene => {
                 title_scene::TitleScene::new()
             },
             SceneName::SkillsScene => {
                 skills_scene::SkillsScene::new()
+            },
+            SceneName::TileScene => {
+                tile_scene::TileScene::new(ctx)
             },
             _ => {
                 title_scene::TitleScene::new()
@@ -144,10 +148,10 @@ impl<'a> EventHandler for Engine<'a> {
                     scene_stack.pop();
                 },
                 Some(SceneChangeEvent::PushScene(scene)) => {
-                    scene_stack.push(self.scenebuilder(scene))
+                    scene_stack.push(self.scenebuilder(ctx, scene))
                 },
                 Some(SceneChangeEvent::SwapScene(scene)) => {
-                    scene_stack.swap(self.scenebuilder(scene));
+                    scene_stack.swap(self.scenebuilder(ctx, scene));
                 },
                 _ => ()
             }
@@ -174,6 +178,18 @@ impl<'a> EventHandler for Engine<'a> {
     ) {
         let mut scene_stack = self.scene_stack.take().unwrap();
         scene_stack.key_down_event(ctx, keycode, keymods, repeat, &mut ());
+        self.scene_stack = Some(scene_stack);
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32
+    ) {
+        let mut scene_stack = self.scene_stack.take().unwrap();
+        scene_stack.mouse_button_down_event(ctx, button, x, y, &mut ());
         self.scene_stack = Some(scene_stack);
     }
 }
