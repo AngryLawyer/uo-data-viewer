@@ -4,6 +4,7 @@ use title_scene;
 use skills_scene;
 use tile_scene;
 use statics_scene;
+use hues_scene;
 use ggez::{graphics, Context, ContextBuilder, GameResult};
 use ggez::event::{self, EventHandler, quit, KeyCode, KeyMods, MouseButton};
 pub struct Engine<'a> {
@@ -33,13 +34,13 @@ impl<'a> Engine<'a> {
             SceneName::StaticsScene => {
                 statics_scene::StaticsScene::new(ctx)
             },
+            SceneName::HuesScene => {
+                hues_scene::HuesScene::new(ctx)
+            },
             _ => {
                 title_scene::TitleScene::new()
             }
             /*
-            scene::SceneName::HuesScene => {
-                hues_scene::HuesScene::new(engine_data, texture_creator)
-            },
             scene::SceneName::MapScene => {
                 map_scene::MapScene::new(engine_data, texture_creator)
             },

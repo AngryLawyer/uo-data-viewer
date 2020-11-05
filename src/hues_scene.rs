@@ -1,44 +1,40 @@
-use scene::SceneName;
-use engine::EngineData;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::surface::Surface;
+use image_convert::image_to_surface;
+use scene::{SceneName, SceneChangeEvent, BoxedScene, Scene};
+use cgmath::Point2;
+use ggez::Context;
+use ggez::graphics::{self, Canvas, Text, DrawParam, Image, Color};
+use ggez::event::{KeyCode, KeyMods, MouseButton};
+use ggez::conf::{NumSamples};
 use std::io::Result;
-use std::path::Path;
 use uorustlibs::hues::{HueReader, HueGroup, Hue};
 use uorustlibs::color::Color as ColorTrait;
+use std::fs::File;
+use std::io::Error;
+use std::path::Path;
 
-use std::io::{Error};
-use std::fs::{File};
-use sdl2::render::{WindowCanvas, Texture, TextureCreator};
-use sdl2::rect::Rect;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::video::WindowContext;
-use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
+static HEIGHT:f32 = 8.0;
 
-pub struct HuesScene<'a> {
-    texture_creator: &'a TextureCreator<WindowContext>,
+pub struct HuesScene {
     reader: Result<HueReader<File>>,
     index: u32,
-    texture: Option<Texture<'a>>,
+    texture: Option<Canvas>,
     exiting: bool,
 }
 
-impl<'a> HuesScene<'a> {
-    pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, Event, SceneName, EngineData<'b>> {
+impl<'a> HuesScene {
+    pub fn new(ctx: &mut Context) -> BoxedScene<'a, SceneName, ()> {
         let mut scene = Box::new(HuesScene {
             reader: HueReader::new(&Path::new("./assets/hues.mul")),
             texture: None,
             index: 0,
             exiting: false,
-            texture_creator
         });
-        scene.load_group(engine_data);
+        scene.load_group(ctx);
         scene
     }
 
-    fn load_group(&mut self, engine_data: &mut EngineData) {
-        let mut surface = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+    fn load_group(&mut self, ctx: &mut Context) {
+        let mut dest = Canvas::with_window_size(ctx).unwrap();
         let maybe_group = match self.reader {
             Ok(ref mut hue_reader) => {
                 hue_reader.read_hue_group(self.index)
@@ -47,74 +43,94 @@ impl<'a> HuesScene<'a> {
         };
         match maybe_group {
             Ok(group) => {
-                let drawn_group = self.draw_hue_group(self.index, &group, engine_data);
-                drawn_group.blit(None, &mut surface, Some(Rect::new(0, 0, drawn_group.width(), drawn_group.height()))).expect("Failed to blit");
+                let drawn_group = self.draw_hue_group(ctx, self.index, &group);
+                graphics::set_canvas(ctx, Some(&dest));
+                graphics::clear(ctx, graphics::BLACK);
+                graphics::draw(ctx, &drawn_group, DrawParam::default()).expect("Failed to blit texture");
+                graphics::set_canvas(ctx, None);
             },
-            Err(_) => ()
+            Err(_) => {
+                graphics::set_canvas(ctx, Some(&dest));
+                graphics::clear(ctx, graphics::BLACK);
+                graphics::set_canvas(ctx, None);
+            }
         };
-        self.texture = Some(self.texture_creator.create_texture_from_surface(&surface).unwrap());
+        self.texture = Some(dest);
     }
 
-    fn draw_hue_group(&self, group_idx: u32, group: &HueGroup, engine_data: &mut EngineData) -> Surface {
-        let mut surface = Surface::new(256, 64 * 9, PixelFormatEnum::RGBA8888).unwrap();
+    fn draw_hue_group(&self, ctx: &mut Context, group_idx: u32, group: &HueGroup) -> Image {
+        let mut dest = Canvas::new(ctx, 256, HEIGHT as u16 * 9, NumSamples::One).unwrap();
+        graphics::set_canvas(ctx, Some(&dest));
+        graphics::clear(ctx, graphics::BLACK);
         for (idx, hue) in group.entries.iter().enumerate() {
-            let drawn_hue = self.draw_hue(&hue, engine_data);
-            drawn_hue.blit(None, &mut surface, Some(Rect::new(0, idx as i32 * drawn_hue.height() as i32, drawn_hue.width(), drawn_hue.height()))).unwrap();
+            let drawn_hue = self.draw_hue(ctx, &hue);
+            graphics::draw(ctx, &drawn_hue, DrawParam::default().dest(Point2::new(0.0, (idx * drawn_hue.height() as usize) as f32))).unwrap();
         }
-        let label = engine_data.text_renderer.create_text(&format!("Group {} - {}", group_idx, group.header), Color::RGBA(255, 255, 255, 255));
-        label.blit(None, &mut surface, Some(Rect::new(0, 64 * 8 + 32, label.width(), label.height()))).expect("Failed to blit");
-        surface
+        let label = Text::new(format!("Group {} - {}", group_idx, group.header));
+        graphics::draw(ctx, &label, (Point2::new(0.0, HEIGHT * 8.0 + 4.0), graphics::WHITE));
+        graphics::set_canvas(ctx, None);
+        dest.into_inner()
     }
 
-    fn draw_hue(&self, hue: &Hue, engine_data: &mut EngineData) -> Surface {
-        let mut surface = Surface::new(256, 64, PixelFormatEnum::RGBA8888).unwrap();
-        for (col_idx, &color) in hue.color_table.iter().enumerate() {
+    fn draw_hue(&self, ctx: &mut Context, hue: &Hue) -> Image {
+        let mut dest = Canvas::new(ctx, 256, HEIGHT as u16, NumSamples::One).unwrap();
+        graphics::set_canvas(ctx, Some(&dest));
+        graphics::clear(ctx, graphics::WHITE);
+        /*for (col_idx, &color) in hue.color_table.iter().enumerate() {
             let (r, g, b, _) = color.to_rgba();
-            surface.fill_rect(Some(Rect::new((col_idx as i32 * 16), 0, 16, 64)), Color::RGB(r, g, b)).unwrap();
-        };
+            let rect = graphics::Rect::new(col_idx as f32 * 16.0, 0.0, 16.0, HEIGHT);
+            let r1 = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, Color::from_rgba(r, g, b, 255)).unwrap();
+            graphics::draw(ctx, &r1, DrawParam::default()).unwrap();
+        };*/
         let label_text = format!("{}: {} - {}", if hue.name.trim().len() > 0 { &hue.name } else { "NONE" }, hue.table_start, hue.table_end);
-        let label = engine_data.text_renderer.create_text(&label_text, Color::RGBA(255, 255, 255, 255));
-        label.blit(None, &mut surface, Some(Rect::new(0, 48, label.width(), label.height()))).expect("Failed to blit");
-        surface
+        let label = Text::new(format!("{}", label_text));
+        graphics::draw(ctx, &label, (Point2::new(0.0, 48.0), graphics::WHITE));
+        graphics::set_canvas(ctx, None);
+        dest.into_inner()
     }
 }
 
-impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for HuesScene<'a> {
-    fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
-        renderer.clear();
+impl Scene<SceneName, ()> for HuesScene {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
         match self.texture {
             Some(ref texture) => {
-                renderer.copy(texture, None, None).unwrap();
+                graphics::draw(ctx, texture, DrawParam::default()).unwrap();
             },
             None => ()
         };
-        renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData<'b>, _tick: u64) {
-        match *event {
-            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                self.exiting = true
-            },
-            Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
-                if self.index > 0 {
-                    self.index -= 1;
-                    self.load_group(engine_data);
-                }
-            },
-            Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
-                self.index += 1;
-                self.load_group(engine_data);
-            },
-             _ => ()
-        }
-    }
-
-    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
+    fn update(&mut self, ctx: &mut Context, engine_data: &mut ()) -> Option<SceneChangeEvent<SceneName>> {
         if self.exiting {
             Some(SceneChangeEvent::PopScene)
         } else {
             None
+        }
+    }
+
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymods: KeyMods,
+        repeat: bool,
+        engine_data: &mut ()
+    ) {
+        match keycode {
+            KeyCode::Escape => {
+                self.exiting = true
+            },
+            KeyCode::Left => {
+                if self.index > 0 {
+                    self.index -= 1;
+                    self.load_group(ctx);
+                }
+            },
+            KeyCode::Right => {
+                self.index += 1;
+                self.load_group(ctx);
+            },
+            _ => ()
         }
     }
 }
