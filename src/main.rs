@@ -9,6 +9,7 @@ mod scene;
 mod title_scene;
 mod skills_scene;
 mod tile_scene;
+mod statics_scene;
 /*
 mod text_renderer;
 mod image_convert;

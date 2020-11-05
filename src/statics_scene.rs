@@ -1,38 +1,32 @@
-use scene::SceneName;
-use engine::EngineData;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::surface::Surface;
-use std::io::Result;
 use std::path::Path;
-use std::fs::File;
-use image_convert::image_to_surface;
+use uorustlibs::skills::Skills;
 
+use image_convert::image_to_surface;
+use scene::{SceneName, SceneChangeEvent, BoxedScene, Scene};
+use cgmath::Point2;
+use ggez::Context;
+use ggez::graphics::{self, Canvas, Text, DrawParam};
+use ggez::event::{KeyCode, KeyMods, MouseButton};
+use std::io::Result;
 use uorustlibs::art::{ArtReader, Art};
 use uorustlibs::tiledata::{TileDataReader, StaticTileData};
+use std::fs::File;
 
-use sdl2::render::{WindowCanvas, Texture, TextureCreator};
-use sdl2::rect::Rect;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::video::WindowContext;
-use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
-
-static MAX_X:u32 = 8;
-static MAX_Y:u32 = 4;
+static MAX_X:u32 = 6;
+static MAX_Y:u32 = 3;
 
 
-pub struct StaticsScene<'a> {
-    texture_creator: &'a TextureCreator<WindowContext>,
+pub struct StaticsScene {
     reader: Result<ArtReader<File>>,
     data: Result<TileDataReader>,
     index: u32,
-    texture: Option<Texture<'a>>,
+    texture: Option<Canvas>,
     tile_data: Vec<Result<StaticTileData>>,
     exiting: bool
 }
 
-impl<'a> StaticsScene<'a> {
-    pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, Event, SceneName, EngineData<'b>> {
+impl<'a> StaticsScene {
+    pub fn new(ctx: &mut Context) -> BoxedScene<'a, SceneName, ()> {
         let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul"));
         let data = TileDataReader::new(&Path::new("./assets/tiledata.mul"));
         let mut scene = Box::new(StaticsScene {
@@ -41,22 +35,22 @@ impl<'a> StaticsScene<'a> {
             index: 0,
             texture: None,
             tile_data: vec![],
-            texture_creator,
             exiting: false
         });
-        scene.create_slice(engine_data);
+        scene.create_slice(ctx);
 
         scene
     }
 
-    fn create_slice(&mut self, engine_data: &mut EngineData) {
+    fn create_slice(&mut self, ctx: &mut Context) {
         self.tile_data = vec![];
+        let mut dest = Canvas::with_window_size(ctx).unwrap();
+        graphics::set_canvas(ctx, Some(&dest));
+        graphics::clear(ctx, graphics::BLACK);
         match (&mut self.reader, &mut self.data) {
             (&mut Ok(ref mut reader), &mut Ok(ref mut data)) => {
                 let limit = MAX_X * MAX_Y;
                 let start = limit * self.index;
-                let mut dest = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
-                dest.fill_rect(None, Color::RGB(0, 0, 0)).unwrap();
 
                 for y in 0..MAX_Y {
                     for x in 0..MAX_X {
@@ -65,31 +59,84 @@ impl<'a> StaticsScene<'a> {
                         match maybe_static {
                             Ok(stat) => {
                                 let image = stat.to_image();
-                                let surface = image_to_surface(&image);
-                                surface.blit(None, &mut dest, Some(Rect::new(128 * x as i32, (128 + 16) * y as i32, surface.width(), surface.height()))).expect("Failed to blit");
+                                let surface = image_to_surface(ctx, &image);
+                                graphics::draw(ctx, &surface, DrawParam::default().dest(Point2::new(128.0 * x as f32, (128.0 + 16.0) * y as f32))).expect("Failed to blit texture");
                             },
                             _ => ()
                         }
-                        let label = engine_data.text_renderer.create_text(&format!("{}", index), Color::RGBA(255, 255, 255, 255));
-                        label.blit(None, &mut dest, Some(Rect::new(128 * x as i32, ((128 + 16) * y as i32) + 128, label.width(), label.height()))).expect("Failed to blit");
+
+                        let label = Text::new(format!("{}", index));
+                        graphics::draw(ctx, &label, (Point2::new(128.0 * x as f32, ((128.0 + 16.0) * y as f32) + 128.0), graphics::WHITE));
                         self.tile_data.push(data.read_static_tile_data(index));
                     }
                 }
-
-                self.texture = Some(self.texture_creator.create_texture_from_surface(&dest).unwrap());
             },
             _ => {
-                let texture = engine_data.text_renderer.create_text_texture(self.texture_creator, "Could not create slice", Color::RGBA(255, 255, 255, 255));
-                self.texture = Some(texture);
+                let text = Text::new("Could not create slice");
+                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE));
             }
+        }
+        graphics::set_canvas(ctx, None);
+        self.texture = Some(dest);
+    }
+}
+
+impl Scene<SceneName, ()> for StaticsScene {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+        match self.texture {
+            Some(ref texture) => {
+                graphics::draw(ctx, texture, DrawParam::default()).unwrap();
+            },
+            None => ()
+        };
+    }
+
+    fn update(&mut self, ctx: &mut Context, engine_data: &mut ()) -> Option<SceneChangeEvent<SceneName>> {
+        if self.exiting {
+            Some(SceneChangeEvent::PopScene)
+        } else {
+            None
         }
     }
 
-    fn handle_click(&mut self, x: i32, y: i32) {
-        let actual_x = x / 128;
-        let actual_y = y / (128 + 16);
-        if actual_x < MAX_X as i32 && actual_y < MAX_Y as i32 {
-            let actual_index = (actual_x + (actual_y * MAX_X as i32)) as usize;
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymods: KeyMods,
+        repeat: bool,
+        engine_data: &mut ()
+    ) {
+        match keycode {
+            KeyCode::Escape => {
+                self.exiting = true
+            },
+            KeyCode::Left => {
+                if self.index > 0 {
+                    self.index -= 1;
+                    self.create_slice(ctx);
+                }
+            },
+            KeyCode::Right => {
+                self.index += 1;
+                self.create_slice(ctx);
+            },
+            _ => ()
+        }
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+        engine_data: &mut () 
+    ) {
+        let actual_x = (x / 128.0) as u32;
+        let actual_y = (y / (128.0 + 16.0)) as u32;
+        if actual_x < MAX_X  && actual_y < MAX_Y {
+            let actual_index = (actual_x + (actual_y * MAX_X)) as usize;
             if actual_index < self.tile_data.len() {
                 match self.tile_data[actual_index] {
                     Ok(ref data) => {
@@ -98,49 +145,6 @@ impl<'a> StaticsScene<'a> {
                     _ => ()
                 }
             }
-        }
-    }
-}
-
-impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for StaticsScene<'a> {
-    fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
-        renderer.clear();
-        match self.texture {
-            Some(ref texture) => {
-                renderer.copy(texture, None, None).unwrap();
-            },
-            None => ()
-        };
-        renderer.present();
-    }
-
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData<'b>, _tick: u64) {
-        match *event {
-            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                self.exiting = true;
-            },
-            Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
-                if self.index > 0 {
-                    self.index -= 1;
-                    self.create_slice(engine_data);
-                }
-            },
-            Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
-                self.index += 1;
-                self.create_slice(engine_data);
-            },
-            Event::MouseButtonDown { x, y, .. } => {
-                self.handle_click(x, y);
-            },
-             _ => ()
-        }
-    }
-
-    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
-        if self.exiting {
-            Some(SceneChangeEvent::PopScene)
-        } else {
-            None
         }
     }
 }
