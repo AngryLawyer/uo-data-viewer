@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::Error;
 use std::path::Path;
 
-static HEIGHT:f32 = 8.0;
+static HEIGHT:f32 = 16.0;
 
 pub struct HuesScene {
     reader: Result<HueReader<File>>,
@@ -43,10 +43,9 @@ impl<'a> HuesScene {
         };
         match maybe_group {
             Ok(group) => {
-                let drawn_group = self.draw_hue_group(ctx, self.index, &group);
                 graphics::set_canvas(ctx, Some(&dest));
                 graphics::clear(ctx, graphics::BLACK);
-                graphics::draw(ctx, &drawn_group, DrawParam::default()).expect("Failed to blit texture");
+                let drawn_group = self.draw_hue_group(ctx, self.index, &group);
                 graphics::set_canvas(ctx, None);
             },
             Err(_) => {
@@ -58,35 +57,24 @@ impl<'a> HuesScene {
         self.texture = Some(dest);
     }
 
-    fn draw_hue_group(&self, ctx: &mut Context, group_idx: u32, group: &HueGroup) -> Image {
-        let mut dest = Canvas::new(ctx, 256, HEIGHT as u16 * 9, NumSamples::One).unwrap();
-        graphics::set_canvas(ctx, Some(&dest));
-        graphics::clear(ctx, graphics::BLACK);
+    fn draw_hue_group(&self, ctx: &mut Context, group_idx: u32, group: &HueGroup) {
         for (idx, hue) in group.entries.iter().enumerate() {
-            let drawn_hue = self.draw_hue(ctx, &hue);
-            graphics::draw(ctx, &drawn_hue, DrawParam::default().dest(Point2::new(0.0, (idx * drawn_hue.height() as usize) as f32))).unwrap();
+            let drawn_hue = self.draw_hue(ctx, &hue, idx as u32);
         }
         let label = Text::new(format!("Group {} - {}", group_idx, group.header));
         graphics::draw(ctx, &label, (Point2::new(0.0, HEIGHT * 8.0 + 4.0), graphics::WHITE));
-        graphics::set_canvas(ctx, None);
-        dest.into_inner()
     }
 
-    fn draw_hue(&self, ctx: &mut Context, hue: &Hue) -> Image {
-        let mut dest = Canvas::new(ctx, 256, HEIGHT as u16, NumSamples::One).unwrap();
-        graphics::set_canvas(ctx, Some(&dest));
-        graphics::clear(ctx, graphics::WHITE);
-        /*for (col_idx, &color) in hue.color_table.iter().enumerate() {
+    fn draw_hue(&self, ctx: &mut Context, hue: &Hue, hue_idx: u32) {
+        for (col_idx, &color) in hue.color_table.iter().enumerate() {
             let (r, g, b, _) = color.to_rgba();
-            let rect = graphics::Rect::new(col_idx as f32 * 16.0, 0.0, 16.0, HEIGHT);
+            let rect = graphics::Rect::new(col_idx as f32 * 16.0, hue_idx as f32 * HEIGHT, 16.0, HEIGHT);
             let r1 = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), rect, Color::from_rgba(r, g, b, 255)).unwrap();
             graphics::draw(ctx, &r1, DrawParam::default()).unwrap();
-        };*/
+        };
         let label_text = format!("{}: {} - {}", if hue.name.trim().len() > 0 { &hue.name } else { "NONE" }, hue.table_start, hue.table_end);
         let label = Text::new(format!("{}", label_text));
-        graphics::draw(ctx, &label, (Point2::new(0.0, 48.0), graphics::WHITE));
-        graphics::set_canvas(ctx, None);
-        dest.into_inner()
+        graphics::draw(ctx, &label, (Point2::new(hue.color_table.len() as f32 * 16.0, hue_idx as f32 * HEIGHT), graphics::WHITE));
     }
 }
 
