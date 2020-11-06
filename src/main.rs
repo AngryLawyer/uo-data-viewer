@@ -12,19 +12,10 @@ mod tile_scene;
 mod statics_scene;
 mod hues_scene;
 mod texmaps_scene;
-/*
-mod text_renderer;
-mod image_convert;
-
-mod title_scene;
-mod skills_scene;
-mod tile_scene;
-mod statics_scene;
-mod hues_scene;
-mod map_scene;
 mod gump_scene;
+/*
+mod map_scene;
 mod anim_scene;
-mod texmaps_scene;
 mod world_scene;
 
 mod map;

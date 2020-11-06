@@ -1,108 +1,106 @@
-use engine::EngineData;
-use image_convert::image_to_surface;
-use scene::SceneName;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::rect::Rect;
-use sdl2::render::{WindowCanvas, Texture, TextureCreator};
-use sdl2::surface::Surface;
-use sdl2::video::WindowContext;
-use sdl2_engine_helpers::scene::{Scene, BoxedScene, SceneChangeEvent};
-use std::fs::File;
-use std::io::Result;
 use std::path::Path;
+use image_convert::image_to_surface;
+use scene::{SceneName, SceneChangeEvent, BoxedScene, Scene};
+use cgmath::Point2;
+use ggez::Context;
+use ggez::graphics::{self, Canvas, Text, DrawParam};
+use ggez::event::{KeyCode, KeyMods, MouseButton};
+use std::io::Result;
+use uorustlibs::art::{ArtReader, Art};
+use std::fs::File;
 use uorustlibs::gump::GumpReader;
 
-pub struct GumpScene<'a> {
+pub struct GumpScene {
     reader: Result<GumpReader<File>>,
     index: u32,
-    texture_creator: &'a TextureCreator<WindowContext>,
-    texture: Option<Texture<'a>>,
+    texture: Option<Canvas>,
     exiting: bool,
 }
 
-impl<'a> GumpScene<'a> {
-    pub fn new<'b>(engine_data: &mut EngineData<'b>, texture_creator: &'a TextureCreator<WindowContext>) -> BoxedScene<'a, Event, SceneName, EngineData<'b>> {
+impl<'a> GumpScene {
+    pub fn new(ctx: &mut Context) -> BoxedScene<'a, SceneName, ()> {
         let reader = GumpReader::new(&Path::new("./assets/gumpidx.mul"), &Path::new("./assets/gumpart.mul"));
         let mut scene = Box::new(GumpScene {
             reader: reader,
             index: 0,
             texture: None,
-            exiting: false,
-            texture_creator,
+            exiting: false
         });
-        scene.create_slice(engine_data);
-
+        scene.create_slice(ctx);
         scene
     }
 
-    fn create_slice(&mut self, engine_data: &mut EngineData) {
-        let mut dest = Surface::new(1024, 768, PixelFormatEnum::RGBA8888).unwrap();
+    fn create_slice(&mut self, ctx: &mut Context) {
+        let mut dest = Canvas::with_window_size(ctx).unwrap();
+        graphics::set_canvas(ctx, Some(&dest));
+        graphics::clear(ctx, graphics::BLACK);
         match self.reader {
             Ok(ref mut reader) => {
                 match reader.read_gump(self.index) {
                     Ok(gump) => {
-                        dest.fill_rect(None, Color::RGB(0, 0, 0)).unwrap();
                         let image = gump.to_image();
-                        let surface = image_to_surface(&image);
-                        surface.blit(None, &mut dest, Some(Rect::new(0, 0, surface.width(), surface.height()))).expect("Could not blit surface");
-                        let label = engine_data.text_renderer.create_text(&format!("{}", self.index), Color::RGBA(255, 255, 255, 255));
-                        label.blit(None, &mut dest, Some(Rect::new(9, surface.height() as i32 + 16, label.width(), label.height()))).expect("Could not blit surface");
+                        let surface = image_to_surface(ctx, &image);
+                        graphics::draw(ctx, &surface, DrawParam::default()).expect("Failed to blit texture");
+                        let label = Text::new(format!("{}", self.index));
+                        graphics::draw(ctx, &label, (Point2::new(9.0, (surface.height() as f32 + 16.0)), graphics::WHITE));
                     },
                     _ => {
-                        let error = engine_data.text_renderer.create_text("Invalid gump", Color::RGBA(255, 255, 255, 255));
-                        error.blit(None, &mut dest, Some(Rect::new(0, 0, error.width(), error.height()))).expect("Could not blit surface");
-                        let label = engine_data.text_renderer.create_text(&format!("{}", self.index), Color::RGBA(255, 255, 255, 255));
-                        label.blit(None, &mut dest, Some(Rect::new(0, 16, label.width(), label.height()))).expect("Could not blit surface");
+                        let label = Text::new(format!("Invalid gump {}", self.index));
+                        graphics::draw(ctx, &label, (Point2::new(9.0, 16.0), graphics::WHITE));
                     }
                 }
             },
             _ => {
-                let error = engine_data.text_renderer.create_text("Could not create slice", Color::RGBA(255, 255, 255, 255));
-                error.blit(None, &mut dest, Some(Rect::new(0, 0, error.width(), error.height()))).expect("Could not blit surface");
+                let text = Text::new("Could not create slice");
+                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE));
             }
         }
-        self.texture = Some(self.texture_creator.create_texture_from_surface(&dest).unwrap());
+        graphics::set_canvas(ctx, None);
+        self.texture = Some(dest);
     }
 }
 
-impl<'a, 'b> Scene<Event, SceneName, EngineData<'b>> for GumpScene<'a> {
-    fn render(&mut self, renderer: &mut WindowCanvas, _engine_data: &mut EngineData, _tick: u64) {
-        renderer.clear();
+impl Scene<SceneName, ()> for GumpScene {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
         match self.texture {
             Some(ref texture) => {
-                renderer.copy(texture, None, None).unwrap();
+                graphics::draw(ctx, texture, DrawParam::default()).unwrap();
             },
             None => ()
         };
-        renderer.present();
     }
 
-    fn handle_event(&mut self, event: &Event, engine_data: &mut EngineData, _tick: u64) {
-        match *event {
-            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                self.exiting = true;
-            },
-            Event::KeyDown { keycode: Some(Keycode::Left), .. } => {
-                if self.index > 0 {
-                    self.index -= 1;
-                    self.create_slice(engine_data);
-                }
-            },
-            Event::KeyDown { keycode: Some(Keycode::Right), .. } => {
-                self.index += 1;
-                self.create_slice(engine_data);
-            },
-             _ => ()
-        }
-    }
-
-    fn think(&mut self, _engine_data: &mut EngineData, _tick: u64) -> Option<SceneChangeEvent<SceneName>> {
+    fn update(&mut self, ctx: &mut Context, engine_data: &mut ()) -> Option<SceneChangeEvent<SceneName>> {
         if self.exiting {
             Some(SceneChangeEvent::PopScene)
         } else {
             None
+        }
+    }
+
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymods: KeyMods,
+        repeat: bool,
+        engine_data: &mut ()
+    ) {
+        match keycode {
+            KeyCode::Escape => {
+                self.exiting = true
+            },
+            KeyCode::Left => {
+                if self.index > 0 {
+                    self.index -= 1;
+                    self.create_slice(ctx);
+                }
+            },
+            KeyCode::Right => {
+                self.index += 1;
+                self.create_slice(ctx);
+            },
+            _ => ()
         }
     }
 }
