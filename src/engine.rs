@@ -7,6 +7,7 @@ use statics_scene;
 use hues_scene;
 use texmaps_scene;
 use gump_scene;
+use anim_scene;
 use ggez::{graphics, Context, ContextBuilder, GameResult};
 use ggez::event::{self, EventHandler, quit, KeyCode, KeyMods, MouseButton};
 pub struct Engine<'a> {
@@ -45,6 +46,9 @@ impl<'a> Engine<'a> {
             SceneName::GumpScene => {
                 gump_scene::GumpScene::new(ctx)
             },
+            SceneName::AnimScene => {
+                anim_scene::AnimScene::new(ctx)
+            },
             _ => {
                 title_scene::TitleScene::new()
             }
@@ -54,9 +58,6 @@ impl<'a> Engine<'a> {
             },
             scene::SceneName::GumpScene => {
                 gump_scene::GumpScene::new(engine_data, texture_creator)
-            },
-            scene::SceneName::AnimScene => {
-                anim_scene::AnimScene::new(engine_data, texture_creator)
             },
             scene::SceneName::WorldScene => {
                 world_scene::WorldScene::new(engine_data, texture_creator)

@@ -6,7 +6,6 @@ use ggez::Context;
 use ggez::graphics::{self, Canvas, Text, DrawParam};
 use ggez::event::{KeyCode, KeyMods, MouseButton};
 use std::io::Result;
-use uorustlibs::art::{ArtReader, Art};
 use std::fs::File;
 
 use uorustlibs::texmaps::TexMapsReader;
