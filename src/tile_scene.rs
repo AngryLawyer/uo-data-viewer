@@ -1,14 +1,12 @@
-use std::path::Path;
-use uorustlibs::skills::Skills;
-
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, Canvas, DrawParam, Text};
-use ggez::Context;
+use ggez::{Context, GameResult};
 use image_convert::image_to_surface;
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
 use std::io::Result;
+use std::path::Path;
 use uorustlibs::art::{Art, ArtReader};
 use uorustlibs::tiledata::{MapTileData, TileDataReader};
 
@@ -39,13 +37,13 @@ impl<'a> TileScene {
             tile_data: vec![],
             exiting: false,
         });
-        scene.create_slice(ctx);
+        scene.create_slice(ctx).expect("Could not create slice");
         scene
     }
 
-    fn create_slice(&mut self, ctx: &mut Context) {
+    fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.tile_data = vec![];
-        let mut dest = Canvas::with_window_size(ctx).unwrap();
+        let mut dest = Canvas::with_window_size(ctx)?;
         graphics::set_canvas(ctx, Some(&dest));
         graphics::clear(ctx, graphics::BLACK);
         match (&mut self.reader, &mut self.data) {
@@ -67,8 +65,7 @@ impl<'a> TileScene {
                                         44.0 * x as f32,
                                         (44.0 + 16.0) * y as f32,
                                     )),
-                                )
-                                .expect("Failed to blit texture");
+                                )?
                             }
                             _ => (),
                         };
@@ -80,40 +77,42 @@ impl<'a> TileScene {
                                 Point2::new(44.0 * x as f32, ((44.0 + 16.0) * y as f32) + 44.0),
                                 graphics::WHITE,
                             ),
-                        );
+                        )?;
                         self.tile_data.push(data.read_map_tile_data(index));
                     }
                 }
             }
             _ => {
                 let text = Text::new("Could not create slice");
-                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE));
+                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE))?;
             }
         }
         graphics::set_canvas(ctx, None);
         self.texture = Some(dest);
+        Ok(())
     }
 }
 
 impl Scene<SceneName, ()> for TileScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
         match self.texture {
             Some(ref texture) => {
-                graphics::draw(ctx, texture, DrawParam::default()).unwrap();
+                graphics::draw(ctx, texture, DrawParam::default())?;
             }
             None => (),
         };
+        Ok(())
     }
 
     fn update(
         &mut self,
         ctx: &mut Context,
         engine_data: &mut (),
-    ) -> Option<SceneChangeEvent<SceneName>> {
+    ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
-            Some(SceneChangeEvent::PopScene)
+            Ok(Some(SceneChangeEvent::PopScene))
         } else {
-            None
+            Ok(None)
         }
     }
 

@@ -1,8 +1,7 @@
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, Canvas, DrawParam, Text};
-use ggez::timer;
-use ggez::Context;
+use ggez::{timer, Context, GameResult};
 use image_convert::frame_to_surface;
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::cmp;
@@ -44,9 +43,9 @@ impl<'a> AnimScene {
         scene
     }
 
-    fn load_reader(&mut self, ctx: &mut Context, idx: &Path, mul: &Path) {
+    fn load_reader(&mut self, ctx: &mut Context, idx: &Path, mul: &Path) -> GameResult<()> {
         self.reader = AnimReader::new(idx, mul);
-        self.create_slice(ctx);
+        self.create_slice(ctx)
     }
 
     fn set_file_index(&mut self, ctx: &mut Context, idx: u8) {
@@ -69,7 +68,7 @@ impl<'a> AnimScene {
         self.load_reader(ctx, &idx, &mul);
     }
 
-    fn create_slice(&mut self, ctx: &mut Context) {
+    fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
         let offset = 100;
         let anim = match self.reader {
             Ok(ref mut reader) => reader.read(self.index).or_else(|_| Err("Invalid anim")),
@@ -81,12 +80,11 @@ impl<'a> AnimScene {
                     .to_frames()
                     .enumerate()
                     .map(|(idx, frame)| {
-                        let mut dest = Canvas::with_window_size(ctx).unwrap();
+                        let mut dest = Canvas::with_window_size(ctx)?;
                         graphics::set_canvas(ctx, Some(&dest));
                         graphics::clear(ctx, graphics::BLACK);
                         let surface = frame_to_surface(ctx, &frame);
-                        graphics::draw(ctx, &surface, DrawParam::default())
-                            .expect("Failed to blit texture");
+                        graphics::draw(ctx, &surface, DrawParam::default())?;
 
                         let label = Text::new(format!("{}", self.index));
                         graphics::draw(
@@ -96,7 +94,7 @@ impl<'a> AnimScene {
                                 Point2::new(0.0, surface.height() as f32 + 16.0),
                                 graphics::WHITE,
                             ),
-                        );
+                        )?;
                         let label = Text::new(format!("{} / {}", idx + 1, anim.frame_count));
                         graphics::draw(
                             ctx,
@@ -105,44 +103,45 @@ impl<'a> AnimScene {
                                 Point2::new(0.0, surface.height() as f32 + 32.0),
                                 graphics::WHITE,
                             ),
-                        );
-                        dest
+                        )?;
+                        Ok(dest)
                     })
-                    .collect::<_>();
+                    .collect::<GameResult<Vec<_>>>()?;
             }
             Err(e) => {
-                let mut dest = Canvas::with_window_size(ctx).unwrap();
+                let mut dest = Canvas::with_window_size(ctx)?;
                 graphics::set_canvas(ctx, Some(&dest));
                 graphics::clear(ctx, graphics::BLACK);
                 let label = Text::new(e);
-                graphics::draw(ctx, &label, (Point2::new(0.0, 0.0), graphics::WHITE));
+                graphics::draw(ctx, &label, (Point2::new(0.0, 0.0), graphics::WHITE))?;
                 let label = Text::new(format!("{}", self.index));
-                graphics::draw(ctx, &label, (Point2::new(0.0, 16.0), graphics::WHITE));
+                graphics::draw(ctx, &label, (Point2::new(0.0, 16.0), graphics::WHITE))?;
                 self.textures = vec![dest];
             }
         };
         graphics::set_canvas(ctx, None);
         self.current_frame = 0;
+        Ok(())
     }
 }
 
 impl Scene<SceneName, ()> for AnimScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
         if self.textures.len() > 0 {
             graphics::draw(
                 ctx,
                 &self.textures[self.current_frame],
                 DrawParam::default(),
-            )
-            .unwrap();
+            )?;
         }
+        Ok(())
     }
 
     fn update(
         &mut self,
         ctx: &mut Context,
         engine_data: &mut (),
-    ) -> Option<SceneChangeEvent<SceneName>> {
+    ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         const DESIRED_FPS: u32 = 15;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -153,9 +152,9 @@ impl Scene<SceneName, ()> for AnimScene {
         }
 
         if self.exiting {
-            Some(SceneChangeEvent::PopScene)
+            Ok(Some(SceneChangeEvent::PopScene))
         } else {
-            None
+            Ok(None)
         }
     }
 

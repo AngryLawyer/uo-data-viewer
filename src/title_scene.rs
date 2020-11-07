@@ -1,7 +1,7 @@
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics::{self, Text};
-use ggez::Context;
+use ggez::{Context, GameResult};
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 
 pub struct TitleScene {
@@ -19,17 +19,17 @@ impl<'a> TitleScene {
 }
 
 impl Scene<SceneName, ()> for TitleScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
-        graphics::draw(ctx, &self.text, (Point2::new(0.0, 0.0), graphics::WHITE));
+        graphics::draw(ctx, &self.text, (Point2::new(0.0, 0.0), graphics::WHITE))
     }
 
     fn update(
         &mut self,
         ctx: &mut Context,
         engine_data: &mut (),
-    ) -> Option<SceneChangeEvent<SceneName>> {
-        self.last_event.take()
+    ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
+        Ok(self.last_event.take())
     }
 
     fn key_down_event(

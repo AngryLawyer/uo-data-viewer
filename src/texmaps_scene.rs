@@ -1,7 +1,7 @@
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, Canvas, DrawParam, Text};
-use ggez::Context;
+use ggez::{Context, GameResult};
 use image_convert::image_to_surface;
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
@@ -36,8 +36,8 @@ impl<'a> TexMapsScene {
         scene
     }
 
-    fn create_slice(&mut self, ctx: &mut Context) {
-        let mut dest = Canvas::with_window_size(ctx).unwrap();
+    fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let mut dest = Canvas::with_window_size(ctx)?;
         graphics::set_canvas(ctx, Some(&dest));
         graphics::clear(ctx, graphics::BLACK);
         match self.reader {
@@ -83,28 +83,30 @@ impl<'a> TexMapsScene {
         }
         graphics::set_canvas(ctx, None);
         self.texture = Some(dest);
+        Ok(())
     }
 }
 
 impl Scene<SceneName, ()> for TexMapsScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
         match self.texture {
             Some(ref texture) => {
-                graphics::draw(ctx, texture, DrawParam::default()).unwrap();
+                graphics::draw(ctx, texture, DrawParam::default())?;
             }
             None => (),
         };
+        Ok(())
     }
 
     fn update(
         &mut self,
         ctx: &mut Context,
         engine_data: &mut (),
-    ) -> Option<SceneChangeEvent<SceneName>> {
+    ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
-            Some(SceneChangeEvent::PopScene)
+            Ok(Some(SceneChangeEvent::PopScene))
         } else {
-            None
+            Ok(None)
         }
     }
 

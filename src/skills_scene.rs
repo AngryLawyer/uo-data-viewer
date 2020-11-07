@@ -4,7 +4,7 @@ use uorustlibs::skills::Skills;
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics::{self, Text};
-use ggez::Context;
+use ggez::{Context, GameResult};
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 
 pub struct SkillsScene {
@@ -50,7 +50,7 @@ impl<'a> SkillsScene {
 }
 
 impl Scene<SceneName, ()> for SkillsScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let mut last_width = 0;
         for page in self.pages.iter() {
@@ -59,20 +59,21 @@ impl Scene<SceneName, ()> for SkillsScene {
                 ctx,
                 page,
                 (Point2::new(last_width as f32, 0.0), graphics::WHITE),
-            );
+            )?;
             last_width += width as i32;
         }
+        Ok(())
     }
 
     fn update(
         &mut self,
         ctx: &mut Context,
         engine_data: &mut (),
-    ) -> Option<SceneChangeEvent<SceneName>> {
+    ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
-            Some(SceneChangeEvent::PopScene)
+            Ok(Some(SceneChangeEvent::PopScene))
         } else {
-            None
+            Ok(None)
         }
     }
 

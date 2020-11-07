@@ -2,7 +2,7 @@ use cgmath::Point2;
 use ggez::conf::NumSamples;
 use ggez::event::{KeyCode, KeyMods, MouseButton};
 use ggez::graphics::{self, Canvas, Color, DrawParam, Image, Text};
-use ggez::Context;
+use ggez::{Context, GameResult};
 use image_convert::image_to_surface;
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
@@ -33,8 +33,8 @@ impl<'a> HuesScene {
         scene
     }
 
-    fn load_group(&mut self, ctx: &mut Context) {
-        let mut dest = Canvas::with_window_size(ctx).unwrap();
+    fn load_group(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let mut dest = Canvas::with_window_size(ctx)?;
         let maybe_group = match self.reader {
             Ok(ref mut hue_reader) => hue_reader.read_hue_group(self.index),
             Err(ref x) => Err(Error::new(x.kind(), "Whoops")),
@@ -43,7 +43,7 @@ impl<'a> HuesScene {
             Ok(group) => {
                 graphics::set_canvas(ctx, Some(&dest));
                 graphics::clear(ctx, graphics::BLACK);
-                let drawn_group = self.draw_hue_group(ctx, self.index, &group);
+                let drawn_group = self.draw_hue_group(ctx, self.index, &group)?;
                 graphics::set_canvas(ctx, None);
             }
             Err(_) => {
@@ -53,21 +53,28 @@ impl<'a> HuesScene {
             }
         };
         self.texture = Some(dest);
+        Ok(())
     }
 
-    fn draw_hue_group(&self, ctx: &mut Context, group_idx: u32, group: &HueGroup) {
+    fn draw_hue_group(
+        &self,
+        ctx: &mut Context,
+        group_idx: u32,
+        group: &HueGroup,
+    ) -> GameResult<()> {
         for (idx, hue) in group.entries.iter().enumerate() {
-            let drawn_hue = self.draw_hue(ctx, &hue, idx as u32);
+            let drawn_hue = self.draw_hue(ctx, &hue, idx as u32)?;
         }
         let label = Text::new(format!("Group {} - {}", group_idx, group.header));
         graphics::draw(
             ctx,
             &label,
             (Point2::new(0.0, HEIGHT * 8.0 + 4.0), graphics::WHITE),
-        );
+        )?;
+        Ok(())
     }
 
-    fn draw_hue(&self, ctx: &mut Context, hue: &Hue, hue_idx: u32) {
+    fn draw_hue(&self, ctx: &mut Context, hue: &Hue, hue_idx: u32) -> GameResult<()> {
         for (col_idx, &color) in hue.color_table.iter().enumerate() {
             let (r, g, b, _) = color.to_rgba();
             let rect =
@@ -77,8 +84,7 @@ impl<'a> HuesScene {
                 graphics::DrawMode::fill(),
                 rect,
                 Color::from_rgba(r, g, b, 255),
-            )
-            .unwrap();
+            )?;
             graphics::draw(ctx, &r1, DrawParam::default()).unwrap();
         }
         let label_text = format!(
@@ -99,29 +105,31 @@ impl<'a> HuesScene {
                 Point2::new(hue.color_table.len() as f32 * 16.0, hue_idx as f32 * HEIGHT),
                 graphics::WHITE,
             ),
-        );
+        )?;
+        Ok(())
     }
 }
 
 impl Scene<SceneName, ()> for HuesScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) {
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
         match self.texture {
             Some(ref texture) => {
-                graphics::draw(ctx, texture, DrawParam::default()).unwrap();
+                graphics::draw(ctx, texture, DrawParam::default())?;
             }
             None => (),
         };
+        Ok(())
     }
 
     fn update(
         &mut self,
         ctx: &mut Context,
         engine_data: &mut (),
-    ) -> Option<SceneChangeEvent<SceneName>> {
+    ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
-            Some(SceneChangeEvent::PopScene)
+            Ok(Some(SceneChangeEvent::PopScene))
         } else {
-            None
+            Ok(None)
         }
     }
 

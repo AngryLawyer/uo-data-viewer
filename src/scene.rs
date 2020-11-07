@@ -19,12 +19,12 @@ pub type BoxedScene<'a, SceneChangeParamsT, EngineDataT> =
     Box<Scene<SceneChangeParamsT, EngineDataT> + 'a>;
 
 pub trait Scene<SceneChangeParamsT, EngineDataT> {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut EngineDataT);
+    fn draw(&mut self, ctx: &mut Context, engine_data: &mut EngineDataT) -> GameResult<()>;
     fn update(
         &mut self,
         ctx: &mut Context,
         engine_data: &mut EngineDataT,
-    ) -> Option<SceneChangeEvent<SceneChangeParamsT>>;
+    ) -> GameResult<Option<SceneChangeEvent<SceneChangeParamsT>>>;
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
@@ -82,15 +82,16 @@ impl<'a, SceneChangeParamsT, EngineDataT> SceneStack<'a, SceneChangeParamsT, Eng
         self.scenes.pop()
     }
 
-    pub fn draw(&mut self, ctx: &mut Context, engine_data: &mut EngineDataT) {
+    pub fn draw(&mut self, ctx: &mut Context, engine_data: &mut EngineDataT) -> GameResult<()> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                scene.draw(ctx, engine_data);
+                scene.draw(ctx, engine_data)?;
                 self.scenes.push(scene);
             }
             None => (),
         }
+        Ok(())
     }
 
     pub fn key_down_event(
@@ -115,15 +116,15 @@ impl<'a, SceneChangeParamsT, EngineDataT> SceneStack<'a, SceneChangeParamsT, Eng
         &mut self,
         ctx: &mut Context,
         engine_data: &mut EngineDataT,
-    ) -> Option<SceneChangeEvent<SceneChangeParamsT>> {
+    ) -> GameResult<Option<SceneChangeEvent<SceneChangeParamsT>>> {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                let event = scene.update(ctx, engine_data);
+                let event = scene.update(ctx, engine_data)?;
                 self.scenes.push(scene);
-                event
+                Ok(event)
             }
-            None => None,
+            None => Ok(None),
         }
     }
 

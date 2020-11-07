@@ -1,7 +1,6 @@
 use anim_scene;
 use ggez::event::{self, quit, EventHandler, KeyCode, KeyMods, MouseButton};
-use ggez::timer;
-use ggez::{graphics, Context, ContextBuilder, GameResult};
+use ggez::{graphics, timer, Context, ContextBuilder, GameError, GameResult};
 use gump_scene;
 use hues_scene;
 use scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
@@ -10,6 +9,7 @@ use statics_scene;
 use texmaps_scene;
 use tile_scene;
 use title_scene;
+
 pub struct Engine<'a> {
     scene_stack: Option<SceneStack<'a, SceneName, ()>>,
 }
@@ -53,12 +53,15 @@ impl<'a> Engine<'a> {
 
 impl<'a> EventHandler for Engine<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut scene_stack = self.scene_stack.take().unwrap();
+        let mut scene_stack = self
+            .scene_stack
+            .take()
+            .ok_or_else(|| GameError::EventLoopError("Empty scene stack".to_owned()))?;
         // Update code here...
         if (scene_stack.is_empty()) {
             quit(ctx);
         } else {
-            let scene_event = scene_stack.update(ctx, &mut ());
+            let scene_event = scene_stack.update(ctx, &mut ())?;
             match scene_event {
                 Some(SceneChangeEvent::PopScene) => {
                     scene_stack.pop();
@@ -77,8 +80,11 @@ impl<'a> EventHandler for Engine<'a> {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut scene_stack = self.scene_stack.take().unwrap();
-        scene_stack.draw(ctx, &mut ());
+        let mut scene_stack = self
+            .scene_stack
+            .take()
+            .ok_or_else(|| GameError::EventLoopError("Empty scene stack".to_owned()))?;
+        scene_stack.draw(ctx, &mut ())?;
         self.scene_stack = Some(scene_stack);
         graphics::present(ctx)?;
         timer::yield_now();
@@ -92,13 +98,13 @@ impl<'a> EventHandler for Engine<'a> {
         keymods: KeyMods,
         repeat: bool,
     ) {
-        let mut scene_stack = self.scene_stack.take().unwrap();
+        let mut scene_stack = self.scene_stack.take().expect("Empty scene stack");
         scene_stack.key_down_event(ctx, keycode, keymods, repeat, &mut ());
         self.scene_stack = Some(scene_stack);
     }
 
     fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
-        let mut scene_stack = self.scene_stack.take().unwrap();
+        let mut scene_stack = self.scene_stack.take().expect("Empty scene stack");
         scene_stack.mouse_button_down_event(ctx, button, x, y, &mut ());
         self.scene_stack = Some(scene_stack);
     }
