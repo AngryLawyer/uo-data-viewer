@@ -1,15 +1,15 @@
-use ggez::timer;
-use scene::{SceneName, SceneStack, SceneChangeEvent, BoxedScene};
-use title_scene;
-use skills_scene;
-use tile_scene;
-use statics_scene;
-use hues_scene;
-use texmaps_scene;
-use gump_scene;
 use anim_scene;
+use ggez::event::{self, quit, EventHandler, KeyCode, KeyMods, MouseButton};
+use ggez::timer;
 use ggez::{graphics, Context, ContextBuilder, GameResult};
-use ggez::event::{self, EventHandler, quit, KeyCode, KeyMods, MouseButton};
+use gump_scene;
+use hues_scene;
+use scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
+use skills_scene;
+use statics_scene;
+use texmaps_scene;
+use tile_scene;
+use title_scene;
 pub struct Engine<'a> {
     scene_stack: Option<SceneStack<'a, SceneName, ()>>,
 }
@@ -19,50 +19,34 @@ impl<'a> Engine<'a> {
         let mut scene_stack = SceneStack::new();
         scene_stack.push(title_scene::TitleScene::new());
         Engine {
-            scene_stack: Some(scene_stack)
+            scene_stack: Some(scene_stack),
         }
     }
 
-    pub fn scenebuilder(&mut self, ctx: &mut Context, sceneName: SceneName) -> BoxedScene<'a,  SceneName, ()> {
+    pub fn scenebuilder(
+        &mut self,
+        ctx: &mut Context,
+        sceneName: SceneName,
+    ) -> BoxedScene<'a, SceneName, ()> {
         match sceneName {
-            SceneName::TitleScene => {
-                title_scene::TitleScene::new()
-            },
-            SceneName::SkillsScene => {
-                skills_scene::SkillsScene::new()
-            },
-            SceneName::TileScene => {
-                tile_scene::TileScene::new(ctx)
-            },
-            SceneName::StaticsScene => {
-                statics_scene::StaticsScene::new(ctx)
-            },
-            SceneName::HuesScene => {
-                hues_scene::HuesScene::new(ctx)
-            },
-            SceneName::TexMapsScene => {
-                texmaps_scene::TexMapsScene::new(ctx)
-            },
-            SceneName::GumpScene => {
-                gump_scene::GumpScene::new(ctx)
-            },
-            SceneName::AnimScene => {
-                anim_scene::AnimScene::new(ctx)
-            },
-            _ => {
-                title_scene::TitleScene::new()
-            }
-            /*
-            scene::SceneName::MapScene => {
-                map_scene::MapScene::new(engine_data, texture_creator)
-            },
-            scene::SceneName::GumpScene => {
-                gump_scene::GumpScene::new(engine_data, texture_creator)
-            },
-            scene::SceneName::WorldScene => {
-                world_scene::WorldScene::new(engine_data, texture_creator)
-            },*/
-        
+            SceneName::TitleScene => title_scene::TitleScene::new(),
+            SceneName::SkillsScene => skills_scene::SkillsScene::new(),
+            SceneName::TileScene => tile_scene::TileScene::new(ctx),
+            SceneName::StaticsScene => statics_scene::StaticsScene::new(ctx),
+            SceneName::HuesScene => hues_scene::HuesScene::new(ctx),
+            SceneName::TexMapsScene => texmaps_scene::TexMapsScene::new(ctx),
+            SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
+            SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
+            _ => title_scene::TitleScene::new(), /*
+                                                 scene::SceneName::MapScene => {
+                                                     map_scene::MapScene::new(engine_data, texture_creator)
+                                                 },
+                                                 scene::SceneName::GumpScene => {
+                                                     gump_scene::GumpScene::new(engine_data, texture_creator)
+                                                 },
+                                                 scene::SceneName::WorldScene => {
+                                                     world_scene::WorldScene::new(engine_data, texture_creator)
+                                                 },*/
         }
     }
 }
@@ -78,14 +62,14 @@ impl<'a> EventHandler for Engine<'a> {
             match scene_event {
                 Some(SceneChangeEvent::PopScene) => {
                     scene_stack.pop();
-                },
+                }
                 Some(SceneChangeEvent::PushScene(scene)) => {
                     scene_stack.push(self.scenebuilder(ctx, scene))
-                },
+                }
                 Some(SceneChangeEvent::SwapScene(scene)) => {
                     scene_stack.swap(self.scenebuilder(ctx, scene));
-                },
-                _ => ()
+                }
+                _ => (),
             }
         }
         self.scene_stack = Some(scene_stack);
@@ -106,20 +90,14 @@ impl<'a> EventHandler for Engine<'a> {
         ctx: &mut Context,
         keycode: KeyCode,
         keymods: KeyMods,
-        repeat: bool
+        repeat: bool,
     ) {
         let mut scene_stack = self.scene_stack.take().unwrap();
         scene_stack.key_down_event(ctx, keycode, keymods, repeat, &mut ());
         self.scene_stack = Some(scene_stack);
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        ctx: &mut Context,
-        button: MouseButton,
-        x: f32,
-        y: f32
-    ) {
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         let mut scene_stack = self.scene_stack.take().unwrap();
         scene_stack.mouse_button_down_event(ctx, button, x, y, &mut ());
         self.scene_stack = Some(scene_stack);

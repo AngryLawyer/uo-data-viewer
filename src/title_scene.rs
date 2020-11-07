@@ -1,8 +1,8 @@
-use scene::{SceneName, SceneChangeEvent, BoxedScene, Scene};
 use cgmath::Point2;
-use ggez::Context;
-use ggez::graphics::{self, Text};
 use ggez::event::{KeyCode, KeyMods};
+use ggez::graphics::{self, Text};
+use ggez::Context;
+use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 
 pub struct TitleScene {
     text: Text,
@@ -24,7 +24,11 @@ impl Scene<SceneName, ()> for TitleScene {
         graphics::draw(ctx, &self.text, (Point2::new(0.0, 0.0), graphics::WHITE));
     }
 
-    fn update(&mut self, ctx: &mut Context, engine_data: &mut ()) -> Option<SceneChangeEvent<SceneName>> {
+    fn update(
+        &mut self,
+        ctx: &mut Context,
+        engine_data: &mut (),
+    ) -> Option<SceneChangeEvent<SceneName>> {
         self.last_event.take()
     }
 
@@ -34,7 +38,7 @@ impl Scene<SceneName, ()> for TitleScene {
         keycode: KeyCode,
         keymods: KeyMods,
         repeat: bool,
-        engine_data: &mut ()
+        engine_data: &mut (),
     ) {
         self.last_event = match keycode {
             KeyCode::Escape => Some(SceneChangeEvent::PopScene),
@@ -47,7 +51,7 @@ impl Scene<SceneName, ()> for TitleScene {
             KeyCode::Key7 => Some(SceneChangeEvent::PushScene(SceneName::AnimScene)),
             KeyCode::Key8 => Some(SceneChangeEvent::PushScene(SceneName::TexMapsScene)),
             KeyCode::Key9 => Some(SceneChangeEvent::PushScene(SceneName::WorldScene)),
-            _ => None
+            _ => None,
         }
     }
 }

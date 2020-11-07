@@ -1,18 +1,17 @@
-use std::path::Path;
-use image_convert::image_to_surface;
-use scene::{SceneName, SceneChangeEvent, BoxedScene, Scene};
 use cgmath::Point2;
-use ggez::Context;
-use ggez::graphics::{self, Canvas, Text, DrawParam};
 use ggez::event::{KeyCode, KeyMods, MouseButton};
-use std::io::Result;
+use ggez::graphics::{self, Canvas, DrawParam, Text};
+use ggez::Context;
+use image_convert::image_to_surface;
+use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
+use std::io::Result;
+use std::path::Path;
 
 use uorustlibs::texmaps::TexMapsReader;
 
-
-static MAX_X:u32 = 8;
-static MAX_Y:u32 = 5;
+static MAX_X: u32 = 8;
+static MAX_Y: u32 = 5;
 
 pub struct TexMapsScene {
     reader: Result<TexMapsReader<File>>,
@@ -23,12 +22,15 @@ pub struct TexMapsScene {
 
 impl<'a> TexMapsScene {
     pub fn new(ctx: &mut Context) -> BoxedScene<'a, SceneName, ()> {
-        let reader = TexMapsReader::new(&Path::new("./assets/texidx.mul"), &Path::new("./assets/texmaps.mul"));
+        let reader = TexMapsReader::new(
+            &Path::new("./assets/texidx.mul"),
+            &Path::new("./assets/texmaps.mul"),
+        );
         let mut scene = Box::new(TexMapsScene {
             reader: reader,
             index: 0,
             texture: None,
-            exiting: false
+            exiting: false,
         });
         scene.create_slice(ctx);
         scene
@@ -50,15 +52,30 @@ impl<'a> TexMapsScene {
                             Ok(tile) => {
                                 let image = tile.to_image();
                                 let surface = image_to_surface(ctx, &image);
-                                graphics::draw(ctx, &surface, DrawParam::default().dest(Point2::new(128.0 * x as f32, (128.0 + 16.0) * y as f32))).expect("Failed to blit texture");
-                            },
-                            _ => ()
+                                graphics::draw(
+                                    ctx,
+                                    &surface,
+                                    DrawParam::default().dest(Point2::new(
+                                        128.0 * x as f32,
+                                        (128.0 + 16.0) * y as f32,
+                                    )),
+                                )
+                                .expect("Failed to blit texture");
+                            }
+                            _ => (),
                         };
                         let label = Text::new(format!("{}", index));
-                        graphics::draw(ctx, &label, (Point2::new(128.0 * x as f32, ((128.0 + 16.0) * y as f32) + 128.0), graphics::WHITE));
+                        graphics::draw(
+                            ctx,
+                            &label,
+                            (
+                                Point2::new(128.0 * x as f32, ((128.0 + 16.0) * y as f32) + 128.0),
+                                graphics::WHITE,
+                            ),
+                        );
                     }
                 }
-            },
+            }
             _ => {
                 let text = Text::new("Could not create slice");
                 graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE));
@@ -74,12 +91,16 @@ impl Scene<SceneName, ()> for TexMapsScene {
         match self.texture {
             Some(ref texture) => {
                 graphics::draw(ctx, texture, DrawParam::default()).unwrap();
-            },
-            None => ()
+            }
+            None => (),
         };
     }
 
-    fn update(&mut self, ctx: &mut Context, engine_data: &mut ()) -> Option<SceneChangeEvent<SceneName>> {
+    fn update(
+        &mut self,
+        ctx: &mut Context,
+        engine_data: &mut (),
+    ) -> Option<SceneChangeEvent<SceneName>> {
         if self.exiting {
             Some(SceneChangeEvent::PopScene)
         } else {
@@ -93,23 +114,21 @@ impl Scene<SceneName, ()> for TexMapsScene {
         keycode: KeyCode,
         keymods: KeyMods,
         repeat: bool,
-        engine_data: &mut ()
+        engine_data: &mut (),
     ) {
         match keycode {
-            KeyCode::Escape => {
-                self.exiting = true
-            },
+            KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
                 if self.index > 0 {
                     self.index -= 1;
                     self.create_slice(ctx);
                 }
-            },
+            }
             KeyCode::Right => {
                 self.index += 1;
                 self.create_slice(ctx);
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 }
