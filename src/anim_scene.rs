@@ -5,8 +5,10 @@ use cgmath::Point2;
 use ggez::Context;
 use ggez::graphics::{self, Canvas, Text, DrawParam};
 use ggez::event::{KeyCode, KeyMods, MouseButton};
+use ggez::timer;
 use std::io::Result;
 use std::fs::File;
+use std::cmp;
 
 use uorustlibs::anim::AnimReader;
 
@@ -69,9 +71,9 @@ impl<'a> AnimScene {
                     graphics::draw(ctx, &surface, DrawParam::default()).expect("Failed to blit texture");
 
                     let label = Text::new(format!("{}", self.index));
-                    graphics::draw(ctx, &label, (Point2::new(0.0, 9.0 * offset as f32 + surface.height() as f32 + 16.0), graphics::WHITE));
-                    let label = Text::new(format!("{} / {}", idx, anim.frame_count));
-                    graphics::draw(ctx, &label, (Point2::new(0.0, 9.0 * offset as f32 + surface.height() as f32 + 32.0), graphics::WHITE));
+                    graphics::draw(ctx, &label, (Point2::new(0.0, surface.height() as f32 + 16.0), graphics::WHITE));
+                    let label = Text::new(format!("{} / {}", idx + 1, anim.frame_count));
+                    graphics::draw(ctx, &label, (Point2::new(0.0, surface.height() as f32 + 32.0), graphics::WHITE));
                     dest
                 }).collect::<_>();
             },
@@ -99,6 +101,15 @@ impl Scene<SceneName, ()> for AnimScene {
     }
 
     fn update(&mut self, ctx: &mut Context, engine_data: &mut ()) -> Option<SceneChangeEvent<SceneName>> {
+        const DESIRED_FPS: u32 = 15;
+
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            self.current_frame += 1;
+                if (self.current_frame == self.textures.len()) {
+                self.current_frame = 0;
+            }
+        }
+
         if self.exiting {
             Some(SceneChangeEvent::PopScene)
         } else {
@@ -121,11 +132,25 @@ impl Scene<SceneName, ()> for AnimScene {
             KeyCode::Left => {
                 if self.index > 0 {
                     self.index -= 1;
+                    self.current_frame = 0;
                     self.create_slice(ctx);
                 }
             },
             KeyCode::Right => {
                 self.index += 1;
+                    self.current_frame = 0;
+                self.create_slice(ctx);
+            },
+            KeyCode::PageDown => {
+                if self.index > 0 {
+                    self.index = cmp::max(self.index - 10, 0) ;
+                    self.current_frame = 0;
+                    self.create_slice(ctx);
+                }
+            },
+            KeyCode::PageUp => {
+                self.index += 10;
+                self.current_frame = 0;
                 self.create_slice(ctx);
             },
             KeyCode::Tab => {
