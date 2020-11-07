@@ -1,6 +1,6 @@
 use anim_scene;
-use ggez::event::{self, quit, EventHandler, KeyCode, KeyMods, MouseButton};
-use ggez::{graphics, timer, Context, ContextBuilder, GameError, GameResult};
+use ggez::event::{quit, EventHandler, KeyCode, KeyMods, MouseButton};
+use ggez::{graphics, timer, Context, GameError, GameResult};
 use gump_scene;
 use hues_scene;
 use scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
@@ -23,12 +23,12 @@ impl<'a> Engine<'a> {
         }
     }
 
-    pub fn scenebuilder(
+    pub fn scene_builder(
         &mut self,
         ctx: &mut Context,
-        sceneName: SceneName,
+        scene_name: SceneName,
     ) -> BoxedScene<'a, SceneName, ()> {
-        match sceneName {
+        match scene_name {
             SceneName::TitleScene => title_scene::TitleScene::new(),
             SceneName::SkillsScene => skills_scene::SkillsScene::new(),
             SceneName::TileScene => tile_scene::TileScene::new(ctx),
@@ -58,7 +58,7 @@ impl<'a> EventHandler for Engine<'a> {
             .take()
             .ok_or_else(|| GameError::EventLoopError("Empty scene stack".to_owned()))?;
         // Update code here...
-        if (scene_stack.is_empty()) {
+        if scene_stack.is_empty() {
             quit(ctx);
         } else {
             let scene_event = scene_stack.update(ctx, &mut ())?;
@@ -67,10 +67,10 @@ impl<'a> EventHandler for Engine<'a> {
                     scene_stack.pop();
                 }
                 Some(SceneChangeEvent::PushScene(scene)) => {
-                    scene_stack.push(self.scenebuilder(ctx, scene))
+                    scene_stack.push(self.scene_builder(ctx, scene))
                 }
                 Some(SceneChangeEvent::SwapScene(scene)) => {
-                    scene_stack.swap(self.scenebuilder(ctx, scene));
+                    scene_stack.swap(self.scene_builder(ctx, scene));
                 }
                 _ => (),
             }

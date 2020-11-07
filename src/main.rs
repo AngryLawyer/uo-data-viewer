@@ -23,8 +23,8 @@ mod caches;
 
 use std::path::Path;*/
 use ggez::conf::WindowSetup;
-use ggez::event::{self};
-use ggez::{ContextBuilder, GameResult};
+use ggez::event;
+use ggez::ContextBuilder;
 
 fn main() {
     // Make a Context.

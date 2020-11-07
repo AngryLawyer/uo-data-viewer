@@ -1,9 +1,7 @@
 use cgmath::Point2;
-use ggez::conf::NumSamples;
-use ggez::event::{KeyCode, KeyMods, MouseButton};
-use ggez::graphics::{self, Canvas, Color, DrawParam, Image, Text};
+use ggez::event::{KeyCode, KeyMods};
+use ggez::graphics::{self, Canvas, Color, DrawParam, Text};
 use ggez::{Context, GameResult};
-use image_convert::image_to_surface;
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
 use std::io::Error;
@@ -29,12 +27,12 @@ impl<'a> HuesScene {
             index: 0,
             exiting: false,
         });
-        scene.load_group(ctx);
+        scene.load_group(ctx).expect("Failed to create slice");
         scene
     }
 
     fn load_group(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut dest = Canvas::with_window_size(ctx)?;
+        let dest = Canvas::with_window_size(ctx)?;
         let maybe_group = match self.reader {
             Ok(ref mut hue_reader) => hue_reader.read_hue_group(self.index),
             Err(ref x) => Err(Error::new(x.kind(), "Whoops")),
@@ -43,7 +41,7 @@ impl<'a> HuesScene {
             Ok(group) => {
                 graphics::set_canvas(ctx, Some(&dest));
                 graphics::clear(ctx, graphics::BLACK);
-                let drawn_group = self.draw_hue_group(ctx, self.index, &group)?;
+                self.draw_hue_group(ctx, self.index, &group)?;
                 graphics::set_canvas(ctx, None);
             }
             Err(_) => {
@@ -63,7 +61,7 @@ impl<'a> HuesScene {
         group: &HueGroup,
     ) -> GameResult<()> {
         for (idx, hue) in group.entries.iter().enumerate() {
-            let drawn_hue = self.draw_hue(ctx, &hue, idx as u32)?;
+            self.draw_hue(ctx, &hue, idx as u32)?;
         }
         let label = Text::new(format!("Group {} - {}", group_idx, group.header));
         graphics::draw(
@@ -111,7 +109,7 @@ impl<'a> HuesScene {
 }
 
 impl Scene<SceneName, ()> for HuesScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
         match self.texture {
             Some(ref texture) => {
                 graphics::draw(ctx, texture, DrawParam::default())?;
@@ -123,8 +121,8 @@ impl Scene<SceneName, ()> for HuesScene {
 
     fn update(
         &mut self,
-        ctx: &mut Context,
-        engine_data: &mut (),
+        _ctx: &mut Context,
+        _engine_data: &mut (),
     ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
             Ok(Some(SceneChangeEvent::PopScene))
@@ -137,21 +135,21 @@ impl Scene<SceneName, ()> for HuesScene {
         &mut self,
         ctx: &mut Context,
         keycode: KeyCode,
-        keymods: KeyMods,
-        repeat: bool,
-        engine_data: &mut (),
+        _keymods: KeyMods,
+        _repeat: bool,
+        _engine_data: &mut (),
     ) {
         match keycode {
             KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
                 if self.index > 0 {
                     self.index -= 1;
-                    self.load_group(ctx);
+                    self.load_group(ctx).expect("Failed to create slice");
                 }
             }
             KeyCode::Right => {
                 self.index += 1;
-                self.load_group(ctx);
+                self.load_group(ctx).expect("Failed to create slice");
             }
             _ => (),
         }

@@ -19,26 +19,26 @@ impl<'a> TitleScene {
 }
 
 impl Scene<SceneName, ()> for TitleScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         graphics::draw(ctx, &self.text, (Point2::new(0.0, 0.0), graphics::WHITE))
     }
 
     fn update(
         &mut self,
-        ctx: &mut Context,
-        engine_data: &mut (),
+        _ctx: &mut Context,
+        _engine_data: &mut (),
     ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         Ok(self.last_event.take())
     }
 
     fn key_down_event(
         &mut self,
-        ctx: &mut Context,
+        _ctx: &mut Context,
         keycode: KeyCode,
-        keymods: KeyMods,
-        repeat: bool,
-        engine_data: &mut (),
+        _keymods: KeyMods,
+        _repeat: bool,
+        _engine_data: &mut (),
     ) {
         self.last_event = match keycode {
             KeyCode::Escape => Some(SceneChangeEvent::PopScene),

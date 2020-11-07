@@ -1,5 +1,5 @@
 use cgmath::Point2;
-use ggez::event::{KeyCode, KeyMods, MouseButton};
+use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics::{self, Canvas, DrawParam, Text};
 use ggez::{timer, Context, GameResult};
 use image_convert::frame_to_surface;
@@ -34,11 +34,13 @@ impl<'a> AnimScene {
             current_frame: 0,
             file_index: 0,
         });
-        scene.load_reader(
-            ctx,
-            &Path::new("./assets/anim.idx"),
-            &Path::new("./assets/Anim.mul"),
-        );
+        scene
+            .load_reader(
+                ctx,
+                &Path::new("./assets/anim.idx"),
+                &Path::new("./assets/Anim.mul"),
+            )
+            .expect("Failed to create slice");
 
         scene
     }
@@ -48,7 +50,7 @@ impl<'a> AnimScene {
         self.create_slice(ctx)
     }
 
-    fn set_file_index(&mut self, ctx: &mut Context, idx: u8) {
+    fn set_file_index(&mut self, ctx: &mut Context, idx: u8) -> GameResult<()> {
         self.file_index = idx;
         let (idx, mul) = match idx {
             0 => (
@@ -65,11 +67,11 @@ impl<'a> AnimScene {
             ),
             _ => panic!("NO"),
         };
-        self.load_reader(ctx, &idx, &mul);
+        self.load_reader(ctx, &idx, &mul)
     }
 
     fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let offset = 100;
+        let offset = 100.0;
         let anim = match self.reader {
             Ok(ref mut reader) => reader.read(self.index).or_else(|_| Err("Invalid anim")),
             _ => Err("No reader"),
@@ -80,18 +82,22 @@ impl<'a> AnimScene {
                     .to_frames()
                     .enumerate()
                     .map(|(idx, frame)| {
-                        let mut dest = Canvas::with_window_size(ctx)?;
+                        let dest = Canvas::with_window_size(ctx)?;
                         graphics::set_canvas(ctx, Some(&dest));
                         graphics::clear(ctx, graphics::BLACK);
                         let surface = frame_to_surface(ctx, &frame);
-                        graphics::draw(ctx, &surface, DrawParam::default())?;
+                        graphics::draw(
+                            ctx,
+                            &surface,
+                            DrawParam::default().dest(Point2::new(offset, 0.0)),
+                        )?;
 
                         let label = Text::new(format!("{}", self.index));
                         graphics::draw(
                             ctx,
                             &label,
                             (
-                                Point2::new(0.0, surface.height() as f32 + 16.0),
+                                Point2::new(offset, surface.height() as f32 + 16.0),
                                 graphics::WHITE,
                             ),
                         )?;
@@ -100,7 +106,7 @@ impl<'a> AnimScene {
                             ctx,
                             &label,
                             (
-                                Point2::new(0.0, surface.height() as f32 + 32.0),
+                                Point2::new(offset, surface.height() as f32 + 32.0),
                                 graphics::WHITE,
                             ),
                         )?;
@@ -109,7 +115,7 @@ impl<'a> AnimScene {
                     .collect::<GameResult<Vec<_>>>()?;
             }
             Err(e) => {
-                let mut dest = Canvas::with_window_size(ctx)?;
+                let dest = Canvas::with_window_size(ctx)?;
                 graphics::set_canvas(ctx, Some(&dest));
                 graphics::clear(ctx, graphics::BLACK);
                 let label = Text::new(e);
@@ -126,7 +132,7 @@ impl<'a> AnimScene {
 }
 
 impl Scene<SceneName, ()> for AnimScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
         if self.textures.len() > 0 {
             graphics::draw(
                 ctx,
@@ -140,13 +146,13 @@ impl Scene<SceneName, ()> for AnimScene {
     fn update(
         &mut self,
         ctx: &mut Context,
-        engine_data: &mut (),
+        _engine_data: &mut (),
     ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         const DESIRED_FPS: u32 = 15;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
             self.current_frame += 1;
-            if (self.current_frame == self.textures.len()) {
+            if self.current_frame == self.textures.len() {
                 self.current_frame = 0;
             }
         }
@@ -162,9 +168,9 @@ impl Scene<SceneName, ()> for AnimScene {
         &mut self,
         ctx: &mut Context,
         keycode: KeyCode,
-        keymods: KeyMods,
-        repeat: bool,
-        engine_data: &mut (),
+        _keymods: KeyMods,
+        _repeat: bool,
+        _engine_data: &mut (),
     ) {
         match keycode {
             KeyCode::Escape => self.exiting = true,
@@ -172,29 +178,30 @@ impl Scene<SceneName, ()> for AnimScene {
                 if self.index > 0 {
                     self.index -= 1;
                     self.current_frame = 0;
-                    self.create_slice(ctx);
+                    self.create_slice(ctx).expect("Failed to create slice");
                 }
             }
             KeyCode::Right => {
                 self.index += 1;
                 self.current_frame = 0;
-                self.create_slice(ctx);
+                self.create_slice(ctx).expect("Failed to create slice");
             }
             KeyCode::PageDown => {
                 if self.index > 0 {
                     self.index = cmp::max(self.index - 10, 0);
                     self.current_frame = 0;
-                    self.create_slice(ctx);
+                    self.create_slice(ctx).expect("Failed to create slice");
                 }
             }
             KeyCode::PageUp => {
                 self.index += 10;
                 self.current_frame = 0;
-                self.create_slice(ctx);
+                self.create_slice(ctx).expect("Failed to create slice");
             }
             KeyCode::Tab => {
                 let idx = self.file_index;
-                self.set_file_index(ctx, (idx + 1) % 3);
+                self.set_file_index(ctx, (idx + 1) % 3)
+                    .expect("Failed to create slice");
             }
             _ => (),
         }

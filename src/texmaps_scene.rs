@@ -1,5 +1,5 @@
 use cgmath::Point2;
-use ggez::event::{KeyCode, KeyMods, MouseButton};
+use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics::{self, Canvas, DrawParam, Text};
 use ggez::{Context, GameResult};
 use image_convert::image_to_surface;
@@ -32,12 +32,12 @@ impl<'a> TexMapsScene {
             texture: None,
             exiting: false,
         });
-        scene.create_slice(ctx);
+        scene.create_slice(ctx).expect("Failed to create slice");
         scene
     }
 
     fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut dest = Canvas::with_window_size(ctx)?;
+        let dest = Canvas::with_window_size(ctx)?;
         graphics::set_canvas(ctx, Some(&dest));
         graphics::clear(ctx, graphics::BLACK);
         match self.reader {
@@ -59,8 +59,7 @@ impl<'a> TexMapsScene {
                                         128.0 * x as f32,
                                         (128.0 + 16.0) * y as f32,
                                     )),
-                                )
-                                .expect("Failed to blit texture");
+                                )?
                             }
                             _ => (),
                         };
@@ -72,13 +71,13 @@ impl<'a> TexMapsScene {
                                 Point2::new(128.0 * x as f32, ((128.0 + 16.0) * y as f32) + 128.0),
                                 graphics::WHITE,
                             ),
-                        );
+                        )?;
                     }
                 }
             }
             _ => {
                 let text = Text::new("Could not create slice");
-                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE));
+                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE))?;
             }
         }
         graphics::set_canvas(ctx, None);
@@ -88,7 +87,7 @@ impl<'a> TexMapsScene {
 }
 
 impl Scene<SceneName, ()> for TexMapsScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
         match self.texture {
             Some(ref texture) => {
                 graphics::draw(ctx, texture, DrawParam::default())?;
@@ -100,8 +99,8 @@ impl Scene<SceneName, ()> for TexMapsScene {
 
     fn update(
         &mut self,
-        ctx: &mut Context,
-        engine_data: &mut (),
+        _ctx: &mut Context,
+        _engine_data: &mut (),
     ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
             Ok(Some(SceneChangeEvent::PopScene))
@@ -114,21 +113,21 @@ impl Scene<SceneName, ()> for TexMapsScene {
         &mut self,
         ctx: &mut Context,
         keycode: KeyCode,
-        keymods: KeyMods,
-        repeat: bool,
-        engine_data: &mut (),
+        _keymods: KeyMods,
+        _repeat: bool,
+        _engine_data: &mut (),
     ) {
         match keycode {
             KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
                 if self.index > 0 {
                     self.index -= 1;
-                    self.create_slice(ctx);
+                    self.create_slice(ctx).expect("Failed to create slice");
                 }
             }
             KeyCode::Right => {
                 self.index += 1;
-                self.create_slice(ctx);
+                self.create_slice(ctx).expect("Failed to create slice");
             }
             _ => (),
         }

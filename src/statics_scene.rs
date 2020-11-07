@@ -8,7 +8,6 @@ use std::fs::File;
 use std::io::Result;
 use std::path::Path;
 use uorustlibs::art::{Art, ArtReader};
-use uorustlibs::skills::Skills;
 use uorustlibs::tiledata::{StaticTileData, TileDataReader};
 
 static MAX_X: u32 = 6;
@@ -38,14 +37,14 @@ impl<'a> StaticsScene {
             tile_data: vec![],
             exiting: false,
         });
-        scene.create_slice(ctx);
+        scene.create_slice(ctx).expect("Could not create slice");
 
         scene
     }
 
     fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.tile_data = vec![];
-        let mut dest = Canvas::with_window_size(ctx)?;
+        let dest = Canvas::with_window_size(ctx)?;
         graphics::set_canvas(ctx, Some(&dest));
         graphics::clear(ctx, graphics::BLACK);
         match (&mut self.reader, &mut self.data) {
@@ -98,7 +97,7 @@ impl<'a> StaticsScene {
 }
 
 impl Scene<SceneName, ()> for StaticsScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
         match self.texture {
             Some(ref texture) => {
                 graphics::draw(ctx, texture, DrawParam::default())?;
@@ -110,8 +109,8 @@ impl Scene<SceneName, ()> for StaticsScene {
 
     fn update(
         &mut self,
-        ctx: &mut Context,
-        engine_data: &mut (),
+        _ctx: &mut Context,
+        _engine_data: &mut (),
     ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
             Ok(Some(SceneChangeEvent::PopScene))
@@ -124,21 +123,21 @@ impl Scene<SceneName, ()> for StaticsScene {
         &mut self,
         ctx: &mut Context,
         keycode: KeyCode,
-        keymods: KeyMods,
-        repeat: bool,
-        engine_data: &mut (),
+        _keymods: KeyMods,
+        _repeat: bool,
+        _engine_data: &mut (),
     ) {
         match keycode {
             KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
                 if self.index > 0 {
                     self.index -= 1;
-                    self.create_slice(ctx);
+                    self.create_slice(ctx).expect("Could not create slice");
                 }
             }
             KeyCode::Right => {
                 self.index += 1;
-                self.create_slice(ctx);
+                self.create_slice(ctx).expect("Could not create slice");
             }
             _ => (),
         }
@@ -146,11 +145,11 @@ impl Scene<SceneName, ()> for StaticsScene {
 
     fn mouse_button_down_event(
         &mut self,
-        ctx: &mut Context,
-        button: MouseButton,
+        _ctx: &mut Context,
+        _button: MouseButton,
         x: f32,
         y: f32,
-        engine_data: &mut (),
+        _engine_data: &mut (),
     ) {
         let actual_x = (x / 128.0) as u32;
         let actual_y = (y / (128.0 + 16.0)) as u32;

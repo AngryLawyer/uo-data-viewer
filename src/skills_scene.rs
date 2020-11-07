@@ -50,7 +50,7 @@ impl<'a> SkillsScene {
 }
 
 impl Scene<SceneName, ()> for SkillsScene {
-    fn draw(&mut self, ctx: &mut Context, engine_data: &mut ()) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let mut last_width = 0;
         for page in self.pages.iter() {
@@ -67,8 +67,8 @@ impl Scene<SceneName, ()> for SkillsScene {
 
     fn update(
         &mut self,
-        ctx: &mut Context,
-        engine_data: &mut (),
+        _ctx: &mut Context,
+        _engine_data: &mut (),
     ) -> GameResult<Option<SceneChangeEvent<SceneName>>> {
         if self.exiting {
             Ok(Some(SceneChangeEvent::PopScene))
@@ -79,11 +79,11 @@ impl Scene<SceneName, ()> for SkillsScene {
 
     fn key_down_event(
         &mut self,
-        ctx: &mut Context,
+        _ctx: &mut Context,
         keycode: KeyCode,
-        keymods: KeyMods,
-        repeat: bool,
-        engine_data: &mut (),
+        _keymods: KeyMods,
+        _repeat: bool,
+        _engine_data: &mut (),
     ) {
         match keycode {
             KeyCode::Escape => self.exiting = true,
