@@ -3,6 +3,7 @@ use ggez::event::{quit, EventHandler, KeyCode, KeyMods, MouseButton};
 use ggez::{graphics, timer, Context, GameError, GameResult};
 use gump_scene;
 use hues_scene;
+use map_scene;
 use scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
 use skills_scene;
 use statics_scene;
@@ -37,13 +38,8 @@ impl<'a> Engine<'a> {
             SceneName::TexMapsScene => texmaps_scene::TexMapsScene::new(ctx),
             SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
             SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
+            SceneName::MapScene => map_scene::MapScene::new(ctx),
             _ => title_scene::TitleScene::new(), /*
-                                                 scene::SceneName::MapScene => {
-                                                     map_scene::MapScene::new(engine_data, texture_creator)
-                                                 },
-                                                 scene::SceneName::GumpScene => {
-                                                     gump_scene::GumpScene::new(engine_data, texture_creator)
-                                                 },
                                                  scene::SceneName::WorldScene => {
                                                      world_scene::WorldScene::new(engine_data, texture_creator)
                                                  },*/

@@ -8,6 +8,8 @@ mod engine;
 mod gump_scene;
 mod hues_scene;
 mod image_convert;
+mod map;
+mod map_scene;
 mod scene;
 mod skills_scene;
 mod statics_scene;
@@ -15,10 +17,8 @@ mod texmaps_scene;
 mod tile_scene;
 mod title_scene;
 /*
-mod map_scene;
 mod world_scene;
 
-mod map;
 mod caches;
 
 use std::path::Path;*/
