@@ -10,6 +10,7 @@ use statics_scene;
 use texmaps_scene;
 use tile_scene;
 use title_scene;
+use world_scene;
 
 pub struct Engine<'a> {
     scene_stack: Option<SceneStack<'a, SceneName, ()>>,
@@ -39,10 +40,7 @@ impl<'a> Engine<'a> {
             SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
             SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
             SceneName::MapScene => map_scene::MapScene::new(ctx),
-            _ => title_scene::TitleScene::new(), /*
-                                                 scene::SceneName::WorldScene => {
-                                                     world_scene::WorldScene::new(engine_data, texture_creator)
-                                                 },*/
+            SceneName::WorldScene => world_scene::WorldScene::new()
         }
     }
 }

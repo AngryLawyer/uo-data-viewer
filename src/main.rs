@@ -16,12 +16,9 @@ mod statics_scene;
 mod texmaps_scene;
 mod tile_scene;
 mod title_scene;
-/*
+mod caches;
 mod world_scene;
 
-mod caches;
-
-use std::path::Path;*/
 use ggez::conf::WindowSetup;
 use ggez::event;
 use ggez::ContextBuilder;
