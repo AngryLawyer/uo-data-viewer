@@ -18,6 +18,7 @@ enum MapRenderMode {
     HeightMap,
     RadarMap,
     StaticsMap,
+    FullMap,
 }
 
 pub struct MapScene {
@@ -30,12 +31,11 @@ pub struct MapScene {
 }
 
 pub fn draw_heightmap_block(
-    ctx: &mut Context,
+    bitmap: &mut Vec<u8>,
     block: &Block,
     _statics: &Vec<StaticLocation>,
     _radar_cols: &Result<Vec<Color16>>,
-) -> Image {
-    let mut bitmap = vec![0; 8 * 8 * 4];
+) {
     for y in 0..8 {
         for x in 0..8 {
             let target = x + (y * 8);
@@ -46,16 +46,14 @@ pub fn draw_heightmap_block(
             bitmap[target * 4 + 3] = 255;
         }
     }
-    Image::from_rgba8(ctx, 8, 8, &bitmap).expect("Failed to create surface")
 }
 
 pub fn draw_radarcol_block(
-    ctx: &mut Context,
+    bitmap: &mut Vec<u8>,
     block: &Block,
     _statics: &Vec<StaticLocation>,
     radar_cols: &Result<Vec<Color16>>,
-) -> Image {
-    let mut bitmap = vec![0; 8 * 8 * 4];
+) {
     for y in 0..8 {
         for x in 0..8 {
             let target = x + (y * 8);
@@ -70,16 +68,14 @@ pub fn draw_radarcol_block(
             bitmap[target * 4 + 3] = 255;
         }
     }
-    Image::from_rgba8(ctx, 8, 8, &bitmap).expect("Failed to create surface")
 }
 
 pub fn draw_statics_block(
-    ctx: &mut Context,
+    bitmap: &mut Vec<u8>,
     _block: &Block,
     statics: &Vec<StaticLocation>,
     radar_cols: &Result<Vec<Color16>>,
-) -> Image {
-    let mut bitmap = vec![0; 8 * 8 * 4];
+) {
     let mut last_height_locs = vec![-127; 64];
     for stat in statics {
         let lookup = (stat.x + (stat.y * 8)) as usize;
@@ -98,7 +94,16 @@ pub fn draw_statics_block(
             last_height_locs[lookup] = stat.altitude;
         }
     }
-    Image::from_rgba8(ctx, 8, 8, &bitmap).expect("Failed to create surface")
+}
+
+pub fn draw_full_block(
+    bitmap: &mut Vec<u8>,
+    block: &Block,
+    statics: &Vec<StaticLocation>,
+    radar_cols: &Result<Vec<Color16>>,
+) {
+    draw_radarcol_block(bitmap, block, statics, radar_cols);
+    draw_statics_block(bitmap, block, statics, radar_cols);
 }
 
 impl<'a> MapScene {
@@ -132,13 +137,16 @@ impl<'a> MapScene {
                     MapRenderMode::HeightMap => draw_heightmap_block,
                     MapRenderMode::RadarMap => draw_radarcol_block,
                     MapRenderMode::StaticsMap => draw_statics_block,
+                    MapRenderMode::FullMap => draw_full_block,
                 };
                 for y in 0..lens.height {
                     for x in 0..lens.width {
                         match &lens.blocks[(x + (y * MAX_BLOCKS_WIDTH)) as usize] {
                             &(Some(ref block), Some(ref statics)) => {
-                                let block_surface =
-                                    block_drawer(ctx, block, statics, &self.radar_colors);
+                                let mut bitmap = vec![0; 8 * 8 * 4];
+                                block_drawer(&mut bitmap, block, statics, &self.radar_colors);
+                                let block_surface = Image::from_rgba8(ctx, 8, 8, &bitmap)
+                                    .expect("Failed to create surface");
                                 graphics::draw(
                                     ctx,
                                     &block_surface,
@@ -147,8 +155,10 @@ impl<'a> MapScene {
                                 )?;
                             }
                             &(Some(ref block), _) => {
-                                let block_surface =
-                                    block_drawer(ctx, block, &vec![], &self.radar_colors);
+                                let mut bitmap = vec![0; 8 * 8 * 4];
+                                block_drawer(&mut bitmap, block, &vec![], &self.radar_colors);
+                                let block_surface = Image::from_rgba8(ctx, 8, 8, &bitmap)
+                                    .expect("Failed to create surface");
                                 graphics::draw(
                                     ctx,
                                     &block_surface,
@@ -232,6 +242,10 @@ impl Scene<SceneName, ()> for MapScene {
             }
             KeyCode::Key3 => {
                 self.mode = MapRenderMode::StaticsMap;
+                self.draw_page(ctx).expect("Failed to draw map");
+            }
+            KeyCode::Key4 => {
+                self.mode = MapRenderMode::FullMap;
                 self.draw_page(ctx).expect("Failed to draw map");
             }
             KeyCode::Tab => {
