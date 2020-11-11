@@ -1,10 +1,10 @@
-use uorustlibs::art::{ArtReader, Art};
+use ggez::graphics::Image;
+use ggez::Context;
+use image_convert::image_to_surface;
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
-use ggez::Context;
-use ggez::graphics::Image;
-use image_convert::image_to_surface;
+use uorustlibs::art::{Art, ArtReader};
 
 pub struct ArtCache {
     tile_cache: HashMap<u32, Option<Image>>,
@@ -13,10 +13,14 @@ pub struct ArtCache {
 
 impl ArtCache {
     pub fn new() -> ArtCache {
-        let reader = ArtReader::new(&Path::new("./assets/artidx.mul"), &Path::new("./assets/art.mul")).expect("Could not load art");
+        let reader = ArtReader::new(
+            &Path::new("./assets/artidx.mul"),
+            &Path::new("./assets/art.mul"),
+        )
+        .expect("Could not load art");
         ArtCache {
             tile_cache: HashMap::new(),
-            reader
+            reader,
         }
     }
 
@@ -29,7 +33,7 @@ impl ArtCache {
                     let image = tile.to_image();
                     let tile_image = image_to_surface(ctx, &image);
                     self.tile_cache.insert(id, Some(tile_image));
-                },
+                }
                 Err(_) => {
                     self.tile_cache.insert(id, None);
                 }

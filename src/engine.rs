@@ -40,7 +40,7 @@ impl<'a> Engine<'a> {
             SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
             SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
             SceneName::MapScene => map_scene::MapScene::new(ctx),
-            SceneName::WorldScene => world_scene::WorldScene::new()
+            SceneName::WorldScene => world_scene::WorldScene::new(),
         }
     }
 }

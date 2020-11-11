@@ -4,6 +4,7 @@ extern crate image;
 extern crate uorustlibs;
 
 mod anim_scene;
+mod caches;
 mod engine;
 mod gump_scene;
 mod hues_scene;
@@ -16,7 +17,6 @@ mod statics_scene;
 mod texmaps_scene;
 mod tile_scene;
 mod title_scene;
-mod caches;
 mod world_scene;
 
 use ggez::conf::WindowSetup;
