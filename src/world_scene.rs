@@ -88,6 +88,7 @@ impl<'a> WorldScene {
 
 impl Scene<SceneName, ()> for WorldScene {
     fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
         self.draw_page(ctx);
         Ok(())
     }
