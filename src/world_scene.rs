@@ -1,4 +1,5 @@
 use caches::art_cache::ArtCache;
+use caches::texmap_cache::TexMapCache;
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics::{self, DrawParam};
@@ -14,6 +15,7 @@ const MAX_BLOCKS_HEIGHT: u32 = 6;
 
 pub struct WorldScene {
     art_cache: ArtCache,
+    texmap_cache: TexMapCache,
     facet: Facet,
     map_id: u8,
     exiting: bool,
@@ -45,6 +47,7 @@ impl<'a> WorldScene {
             map_id: 0,
             facet: map_id_to_facet(0),
             art_cache: ArtCache::new(),
+            texmap_cache: TexMapCache::new(),
         });
         scene
     }
@@ -78,17 +81,35 @@ impl<'a> WorldScene {
                 for y in 0..8 {
                     for x in 0..8 {
                         let cell = block.cells[y * 8 + x];
-                        self.art_cache
-                            .read_tile(ctx, cell.graphic as u32)
-                            .as_ref()
-                            .map(|tile| {
-                                let new_transform = add(
-                                    add(cell_at(x as i32, y as i32), transform),
-                                    Point2::new(0.0, -cell.altitude as f32),
-                                );
-                                graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
-                            })
-                            .unwrap_or(Ok(()))?;
+                        // TODO: cross-block altitudes
+                        let cell_x2y1_height = if x < 7 { block.cells[y * 8 + x + 1].altitude } else { cell.altitude };
+                        let cell_x1y2_height = if y < 7 { block.cells[(y + 1) * 8 + x].altitude } else { cell.altitude };
+                        let cell_x2y2_height = if x < 7 && y < 7 { block.cells[(y + 1) * 8 + x + 1].altitude } else { cell.altitude };
+                        if (cell.altitude == cell_x1y2_height && cell.altitude == cell_x2y1_height && cell.altitude == cell_x2y2_height) {
+                            self.art_cache
+                                .read_tile(ctx, cell.graphic as u32)
+                                .as_ref()
+                                .map(|tile| {
+                                    let new_transform = add(
+                                        add(cell_at(x as i32, y as i32), transform),
+                                        Point2::new(0.0, -cell.altitude as f32),
+                                    );
+                                    graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
+                                })
+                                .unwrap_or(Ok(()))?;
+                        } else {
+                            self.texmap_cache
+                                .read_texmap(ctx, cell.graphic as u32)
+                                .as_ref()
+                                .map(|tile| {
+                                    let new_transform = add(
+                                        add(cell_at(x as i32, y as i32), transform),
+                                        Point2::new(0.0, -cell.altitude as f32),
+                                    );
+                                    graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
+                                })
+                                .unwrap_or(Ok(()))?;
+                        }
                     }
                 }
                 Ok(())
