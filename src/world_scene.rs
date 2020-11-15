@@ -1,5 +1,6 @@
 use caches::art_cache::ArtCache;
 use caches::texmap_cache::TexMapCache;
+use caches::facet_cache::Altitudes;
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics::{self, DrawParam};
@@ -17,6 +18,8 @@ pub struct WorldScene {
     art_cache: ArtCache,
     texmap_cache: TexMapCache,
     facet: Facet,
+    x: u32,
+    y: u32,
     map_id: u8,
     exiting: bool,
 }
@@ -48,73 +51,67 @@ impl<'a> WorldScene {
             facet: map_id_to_facet(0),
             art_cache: ArtCache::new(),
             texmap_cache: TexMapCache::new(),
+            x: 70,
+            y: 70
         });
         scene
     }
 
     pub fn draw_page(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.facet
-            .get_lens(MAX_BLOCKS_WIDTH, MAX_BLOCKS_HEIGHT)
-            .map(|lens| {
-                for y in 0..lens.height {
-                    for x in 0..lens.width {
-                        let (ref block, ref statics) =
-                            lens.blocks[(x + (y * MAX_BLOCKS_WIDTH)) as usize];
-                        let transform = block_at(x as i32, y as i32);
-                        self.draw_block(ctx, block, statics, transform)?
-                    }
-                }
-                Ok(())
-            })
-            .unwrap_or(Ok(()))
+        for y in 0..MAX_BLOCKS_HEIGHT {
+            for x in 0..MAX_BLOCKS_WIDTH {
+                let ((ref block, ref statics), ref altitudes) = self.facet.read_block(x + self.x, y + self.y);
+                let transform = block_at(x as i32, y as i32);
+                self.draw_block(ctx, block, statics, altitudes, transform)?
+            }
+        }
+        Ok(())
     }
 
     pub fn draw_block(
         &mut self,
         ctx: &mut Context,
-        block: &Option<Block>,
-        _statics: &Option<Vec<StaticLocation>>,
+        block: &Block,
+        _statics: &Vec<StaticLocation>,
+        altitudes: &Vec<Altitudes>,
         transform: Point2<f32>,
     ) -> GameResult<()> {
-        block
-            .map(|block| {
-                for y in 0..8 {
-                    for x in 0..8 {
-                        let cell = block.cells[y * 8 + x];
-                        // TODO: cross-block altitudes
-                        let cell_x2y1_height = if x < 7 { block.cells[y * 8 + x + 1].altitude } else { cell.altitude };
-                        let cell_x1y2_height = if y < 7 { block.cells[(y + 1) * 8 + x].altitude } else { cell.altitude };
-                        let cell_x2y2_height = if x < 7 && y < 7 { block.cells[(y + 1) * 8 + x + 1].altitude } else { cell.altitude };
-                        if (cell.altitude == cell_x1y2_height && cell.altitude == cell_x2y1_height && cell.altitude == cell_x2y2_height) {
-                            self.art_cache
-                                .read_tile(ctx, cell.graphic as u32)
-                                .as_ref()
-                                .map(|tile| {
-                                    let new_transform = add(
+        for y in 0..8 {
+            for x in 0..8 {
+                let cell = block.cells[y * 8 + x];
+                let altitudes = altitudes[y * 8 + x];
+                let cell_height = altitudes.x1y1;
+                let cell_x2y1_height = altitudes.x2y1;
+                let cell_x1y2_height = altitudes.x1y2;
+                let cell_x2y2_height = altitudes.x2y2;
+                if (cell_height == cell_x1y2_height && cell.altitude == cell_x2y1_height && cell.altitude == cell_x2y2_height) {
+                    self.art_cache
+                        .read_tile(ctx, cell.graphic as u32)
+                        .as_ref()
+                        .map(|tile| {
+                                let new_transform = add(
+                                    add(cell_at(x as i32, y as i32), transform),
+                                    Point2::new(0.0, -cell.altitude as f32)
+                                );
+                                graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
+                                })
+                    .unwrap_or(Ok(()))?;
+                } else {
+                    self.texmap_cache
+                        .read_texmap(ctx, cell.graphic as u32)
+                        .as_ref()
+                        .map(|tile| {
+                                let new_transform = add(
                                         add(cell_at(x as i32, y as i32), transform),
                                         Point2::new(0.0, -cell.altitude as f32),
-                                    );
-                                    graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
+                                        );
+                                graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
                                 })
-                                .unwrap_or(Ok(()))?;
-                        } else {
-                            self.texmap_cache
-                                .read_texmap(ctx, cell.graphic as u32)
-                                .as_ref()
-                                .map(|tile| {
-                                    let new_transform = add(
-                                        add(cell_at(x as i32, y as i32), transform),
-                                        Point2::new(0.0, -cell.altitude as f32),
-                                    );
-                                    graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
-                                })
-                                .unwrap_or(Ok(()))?;
-                        }
-                    }
+                    .unwrap_or(Ok(()))?;
                 }
-                Ok(())
-            })
-            .unwrap_or(Ok(()))
+            }
+        }
+        Ok(())
     }
 }
 
@@ -135,24 +132,26 @@ impl Scene<SceneName, ()> for WorldScene {
         match keycode {
             KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
-                if self.facet.x >= STEP_X as u32 {
-                    self.facet.x -= STEP_X as u32;
+                if self.x >= STEP_X as u32 {
+                    self.x -= STEP_X as u32;
                 }
             }
             KeyCode::Right => {
-                self.facet.x += STEP_X as u32;
+                self.x += STEP_X as u32;
             }
             KeyCode::Up => {
-                if self.facet.y >= STEP_Y as u32 {
-                    self.facet.y -= STEP_Y as u32;
+                if self.y >= STEP_Y as u32 {
+                    self.y -= STEP_Y as u32;
                 }
             }
             KeyCode::Down => {
-                self.facet.y += STEP_Y as u32;
+                self.y += STEP_Y as u32;
             }
             KeyCode::Tab => {
                 self.map_id = (self.map_id + 1) % MAP_DETAILS.len() as u8;
                 self.facet = map_id_to_facet(self.map_id);
+                self.x = 0;
+                self.y = 0;
             }
             _ => (),
         }

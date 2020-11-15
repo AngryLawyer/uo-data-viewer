@@ -28,6 +28,8 @@ pub struct MapScene {
     mode: MapRenderMode,
     texture: Option<Canvas>,
     exiting: bool,
+    x: u32,
+    y: u32,
 }
 
 pub fn draw_heightmap_block(
@@ -118,6 +120,8 @@ impl<'a> MapScene {
             mode: MapRenderMode::HeightMap,
             radar_colors: colors,
             exiting: false,
+            x: 0,
+            y: 0
         });
 
         scene.draw_page(ctx).expect("Failed to draw map");
@@ -125,56 +129,36 @@ impl<'a> MapScene {
     }
 
     pub fn draw_page(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let lens = self.facet.get_lens(MAX_BLOCKS_WIDTH, MAX_BLOCKS_HEIGHT);
+        let dest = Canvas::with_window_size(ctx)?;
+        graphics::set_canvas(ctx, Some(&dest));
+        graphics::clear(ctx, graphics::BLACK);
 
-        self.texture = match lens {
-            Some(lens) => {
-                let dest = Canvas::with_window_size(ctx)?;
-                graphics::set_canvas(ctx, Some(&dest));
-                graphics::clear(ctx, graphics::BLACK);
-
-                let block_drawer = match self.mode {
-                    MapRenderMode::HeightMap => draw_heightmap_block,
-                    MapRenderMode::RadarMap => draw_radarcol_block,
-                    MapRenderMode::StaticsMap => draw_statics_block,
-                    MapRenderMode::FullMap => draw_full_block,
-                };
-                for y in 0..lens.height {
-                    for x in 0..lens.width {
-                        match &lens.blocks[(x + (y * MAX_BLOCKS_WIDTH)) as usize] {
-                            &(Some(ref block), Some(ref statics)) => {
-                                let mut bitmap = vec![0; 8 * 8 * 4];
-                                block_drawer(&mut bitmap, block, statics, &self.radar_colors);
-                                let block_surface = Image::from_rgba8(ctx, 8, 8, &bitmap)
-                                    .expect("Failed to create surface");
-                                graphics::draw(
-                                    ctx,
-                                    &block_surface,
-                                    DrawParam::default()
-                                        .dest(Point2::new(x as f32 * 8.0, y as f32 * 8.0)),
-                                )?;
-                            }
-                            &(Some(ref block), _) => {
-                                let mut bitmap = vec![0; 8 * 8 * 4];
-                                block_drawer(&mut bitmap, block, &vec![], &self.radar_colors);
-                                let block_surface = Image::from_rgba8(ctx, 8, 8, &bitmap)
-                                    .expect("Failed to create surface");
-                                graphics::draw(
-                                    ctx,
-                                    &block_surface,
-                                    DrawParam::default()
-                                        .dest(Point2::new(x as f32 * 8.0, y as f32 * 8.0)),
-                                )?;
-                            }
-                            _ => (),
-                        }
+        let block_drawer = match self.mode {
+            MapRenderMode::HeightMap => draw_heightmap_block,
+            MapRenderMode::RadarMap => draw_radarcol_block,
+            MapRenderMode::StaticsMap => draw_statics_block,
+            MapRenderMode::FullMap => draw_full_block,
+        };
+        for y in 0..MAX_BLOCKS_HEIGHT {
+            for x in 0..MAX_BLOCKS_WIDTH {
+                match self.facet.read_block(x + self.x, y + self.y) {
+                    ((ref block, ref statics), _) => {
+                        let mut bitmap = vec![0; 8 * 8 * 4];
+                        block_drawer(&mut bitmap, block, statics, &self.radar_colors);
+                        let block_surface = Image::from_rgba8(ctx, 8, 8, &bitmap)
+                            .expect("Failed to create surface");
+                        graphics::draw(
+                            ctx,
+                            &block_surface,
+                            DrawParam::default()
+                                .dest(Point2::new(x as f32 * 8.0, y as f32 * 8.0)),
+                        )?;
                     }
                 }
-                graphics::set_canvas(ctx, None);
-                Some(dest)
             }
-            None => None,
-        };
+        }
+        graphics::set_canvas(ctx, None);
+        self.texture = Some(dest);
         Ok(())
     }
 }
@@ -213,23 +197,23 @@ impl Scene<SceneName, ()> for MapScene {
         match keycode {
             KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
-                if self.facet.x >= STEP_X as u32 {
-                    self.facet.x -= STEP_X as u32;
+                if self.x >= STEP_X as u32 {
+                    self.x -= STEP_X as u32;
                     self.draw_page(ctx).expect("Failed to draw map");
                 }
             }
             KeyCode::Right => {
-                self.facet.x += STEP_X as u32;
+                self.x += STEP_X as u32;
                 self.draw_page(ctx).expect("Failed to draw map");
             }
             KeyCode::Up => {
-                if self.facet.y >= STEP_Y as u32 {
-                    self.facet.y -= STEP_Y as u32;
+                if self.y >= STEP_Y as u32 {
+                    self.y -= STEP_Y as u32;
                     self.draw_page(ctx).expect("Failed to draw map");
                 }
             }
             KeyCode::Down => {
-                self.facet.y += STEP_Y as u32;
+                self.y += STEP_Y as u32;
                 self.draw_page(ctx).expect("Failed to draw map");
             }
             KeyCode::Key1 => {

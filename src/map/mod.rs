@@ -1,13 +1,12 @@
-pub mod lens;
 
 use std::fs::File;
 use std::io::Result;
 use std::path::Path;
 
-use uorustlibs::map::{MapReader, StaticReader};
+use uorustlibs::map::{MapReader, StaticReader, Block, StaticLocation};
 
-use map::lens::MapLens;
 use uorustlibs::map::map_size::{FELUCCA, ILSHENAR, MALAS, TRAMMEL};
+use crate::caches::facet_cache::{FacetCache, Altitudes};
 
 pub fn map_id_to_facet(id: u8) -> Facet {
     let corrected_id = if id as usize >= MAP_DETAILS.len() {
@@ -53,11 +52,7 @@ pub const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 
 ];
 
 pub struct Facet {
-    map_reader: Result<MapReader>,
-    static_reader: Result<StaticReader<File>>,
-    pub x: u32,
-    pub y: u32,
-    map_lens: Option<MapLens>,
+    facet_cache: FacetCache
 }
 
 impl Facet {
@@ -68,42 +63,18 @@ impl Facet {
         width_blocks: u32,
         height_blocks: u32,
     ) -> Facet {
+        let facet_cache = FacetCache::new(MapReader::new(map_path, width_blocks, height_blocks).unwrap(), StaticReader::new(
+            static_index,
+            static_path,
+            width_blocks,
+            height_blocks
+        ).unwrap());
         Facet {
-            map_reader: MapReader::new(map_path, width_blocks, height_blocks),
-            static_reader: StaticReader::new(
-                static_index,
-                static_path,
-                width_blocks,
-                height_blocks,
-            ),
-            x: 0,
-            y: 0,
-            map_lens: None,
+            facet_cache
         }
     }
 
-    pub fn get_lens(&mut self, blocks_width: u32, blocks_height: u32) -> Option<MapLens> {
-        let lens = match (
-            &mut self.map_lens,
-            &mut self.map_reader,
-            &mut self.static_reader,
-        ) {
-            (&mut Some(ref lens), &mut Ok(ref mut map_reader), &mut Ok(ref mut static_reader)) => {
-                Some(lens.update(map_reader, static_reader, self.x, self.y))
-            }
-            (&mut None, &mut Ok(ref mut map_reader), &mut Ok(ref mut static_reader)) => {
-                Some(MapLens::new(
-                    map_reader,
-                    static_reader,
-                    self.x,
-                    self.y,
-                    blocks_width,
-                    blocks_height,
-                ))
-            }
-            _ => None,
-        };
-        self.map_lens = lens;
-        self.map_lens.clone()
+    pub fn read_block(&mut self, x: u32, y: u32) -> ((Block, Vec<StaticLocation>), Vec<Altitudes>) {
+        self.facet_cache.read_block(x, y)
     }
 }
