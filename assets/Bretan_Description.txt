@@ -1,8 +1,0 @@
-Family: Bretan
-Designer: Stefan Peev
-Foundry: Context Ltd.
-Category: San-serif
-Description: 
-    Bretan is a free-to-use non-commercial font created by Stefan Peev (https://www.facebook.com/context.bg) and released under the SIL Open Font License (OFL) (http://scripts.sil.org/OFL).
-
-Language Support: Basic Cyrillic, Basic Latin, Euro
