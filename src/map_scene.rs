@@ -121,7 +121,7 @@ impl<'a> MapScene {
             radar_colors: colors,
             exiting: false,
             x: 0,
-            y: 0
+            y: 0,
         });
 
         scene.draw_page(ctx).expect("Failed to draw map");
@@ -150,8 +150,7 @@ impl<'a> MapScene {
                         graphics::draw(
                             ctx,
                             &block_surface,
-                            DrawParam::default()
-                                .dest(Point2::new(x as f32 * 8.0, y as f32 * 8.0)),
+                            DrawParam::default().dest(Point2::new(x as f32 * 8.0, y as f32 * 8.0)),
                         )?;
                     }
                 }

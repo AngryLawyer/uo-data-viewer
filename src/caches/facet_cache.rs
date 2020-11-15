@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Result;
 use std::path::Path;
 
-use uorustlibs::map::{MapReader, StaticReader, Block, Cell, StaticLocation};
+use uorustlibs::map::{Block, Cell, MapReader, StaticLocation, StaticReader};
 
 #[derive(Clone, Copy)]
 pub struct Altitudes {
@@ -26,7 +26,7 @@ impl FacetCache {
             map_reader,
             static_reader,
             block_cache: HashMap::new(),
-            height_cache: HashMap::new()
+            height_cache: HashMap::new(),
         }
     }
 
@@ -34,9 +34,12 @@ impl FacetCache {
         if (!self.block_cache.contains_key(&(x, y))) {
             let block = self.map_reader.read_block_from_coordinates(x, y);
             let statics = self.static_reader.read_block_from_coordinates(x, y);
-            self.block_cache.insert((x, y), (block.ok().unwrap(), statics.ok().unwrap_or(vec![]))); // FIXME: Out of bounds errors
+            self.block_cache.insert(
+                (x, y),
+                (block.ok().unwrap(), statics.ok().unwrap_or(vec![])),
+            ); // FIXME: Out of bounds errors
         }
-        self.block_cache.get(&(x, y)).unwrap() 
+        self.block_cache.get(&(x, y)).unwrap()
     }
 
     fn read_altitudes(&mut self, x: u32, y: u32) -> &Vec<Altitudes> {
@@ -50,13 +53,19 @@ impl FacetCache {
                 for x in 0..8 {
                     let cell = block.cells[y * 8 + x];
                     let x1y1 = cell.altitude;
-                    let x2y1 = if x < 7 { block.cells[y * 8 + x + 1].altitude } else { 
+                    let x2y1 = if x < 7 {
+                        block.cells[y * 8 + x + 1].altitude
+                    } else {
                         block_x2.cells[y * 8].altitude
                     };
-                    let x1y2 = if y < 7 { block.cells[(y + 1) * 8 + x].altitude } else {
+                    let x1y2 = if y < 7 {
+                        block.cells[(y + 1) * 8 + x].altitude
+                    } else {
                         block_y2.cells[x].altitude
                     };
-                    let x2y2 = if x < 7 && y < 7 { block.cells[(y + 1) * 8 + x + 1].altitude } else {
+                    let x2y2 = if x < 7 && y < 7 {
+                        block.cells[(y + 1) * 8 + x + 1].altitude
+                    } else {
                         block_x2y2.cells[0].altitude
                     };
                     collector.push(Altitudes {
@@ -69,7 +78,7 @@ impl FacetCache {
             }
             self.height_cache.insert((x, y), collector);
         }
-        self.height_cache.get(&(x, y)).unwrap() 
+        self.height_cache.get(&(x, y)).unwrap()
     }
 
     pub fn read_block(&mut self, x: u32, y: u32) -> ((Block, Vec<StaticLocation>), Vec<Altitudes>) {

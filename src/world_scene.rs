@@ -1,9 +1,9 @@
 use caches::art_cache::ArtCache;
-use caches::texmap_cache::TexMapCache;
 use caches::facet_cache::Altitudes;
+use caches::texmap_cache::TexMapCache;
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
-use ggez::graphics::{self, DrawParam, Skewable};
+use ggez::graphics::{self, DrawParam, Image, Skewable};
 use ggez::{Context, GameResult};
 use map::{map_id_to_facet, Facet, MAP_DETAILS};
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
@@ -43,6 +43,41 @@ fn block_at(x: i32, y: i32) -> Point2<f32> {
     )
 }
 
+fn skew(ctx: &mut Context, tile: &Image, altitudes: &Altitudes) -> Skewable {
+    let small_tile_ratio = 0.6875;
+    let large_tile_ratio = 0.34375;
+    let top_right = altitudes.x2y1 - altitudes.x1y1;
+    let bottom_right = altitudes.x2y2 - altitudes.x1y1;
+    let bottom_left = altitudes.x1y2 - altitudes.x1y1;
+    
+    let skewed = if (tile.width() == 64) {
+        let increment = 4.0 / 64.0;
+        Skewable::new(
+            ctx,
+            tile.clone(),
+            [
+                [0.5 * small_tile_ratio, 0.0],
+                [1.0 * small_tile_ratio, 0.5 * small_tile_ratio - (increment * top_right as f32)],
+                [0.5 * small_tile_ratio, 1.0 * small_tile_ratio - (increment * bottom_right as f32)],
+                [0.0, 0.5 * small_tile_ratio - (increment * bottom_left as f32)],
+            ],
+        )
+    } else {
+        let increment = 4.0 / 128.0;
+        Skewable::new(
+            ctx,
+            tile.clone(),
+            [
+                [0.5 * large_tile_ratio, 0.0],
+                [1.0 * large_tile_ratio, 0.5 * large_tile_ratio - (increment * top_right as f32)],
+                [0.5 * large_tile_ratio, 1.0 * large_tile_ratio - (increment * bottom_right as f32)],
+                [0.0, 0.5 * large_tile_ratio - (increment * bottom_left as f32)],
+            ],
+        )
+    };
+    skewed
+}
+
 impl<'a> WorldScene {
     pub fn new() -> BoxedScene<'a, SceneName, ()> {
         let scene = Box::new(WorldScene {
@@ -52,7 +87,7 @@ impl<'a> WorldScene {
             art_cache: ArtCache::new(),
             texmap_cache: TexMapCache::new(),
             x: 160,
-            y: 208 
+            y: 208,
         });
         scene
     }
@@ -60,7 +95,8 @@ impl<'a> WorldScene {
     pub fn draw_page(&mut self, ctx: &mut Context) -> GameResult<()> {
         for y in 0..MAX_BLOCKS_HEIGHT {
             for x in 0..MAX_BLOCKS_WIDTH {
-                let ((ref block, ref statics), ref altitudes) = self.facet.read_block(x + self.x, y + self.y);
+                let ((ref block, ref statics), ref altitudes) =
+                    self.facet.read_block(x + self.x, y + self.y);
                 let transform = block_at(x as i32, y as i32);
                 self.draw_block(ctx, block, statics, altitudes, transform)?
             }
@@ -84,14 +120,17 @@ impl<'a> WorldScene {
                 let cell_x2y1_height = altitudes.x2y1;
                 let cell_x1y2_height = altitudes.x1y2;
                 let cell_x2y2_height = altitudes.x2y2;
-                if (cell_height == cell_x1y2_height && cell.altitude == cell_x2y1_height && cell.altitude == cell_x2y2_height) {
+                if (cell_height == cell_x1y2_height
+                    && cell.altitude == cell_x2y1_height
+                    && cell.altitude == cell_x2y2_height)
+                {
                     self.art_cache
                         .read_tile(ctx, cell.graphic as u32)
                         .as_ref()
                         .map(|tile| {
                             let new_transform = add(
                                 add(cell_at(x as i32, y as i32), transform),
-                                Point2::new(0.0, -cell.altitude as f32)
+                                Point2::new(0.0, -(cell.altitude as f32 * 4.0)),
                             );
                             graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
                         })
@@ -101,14 +140,10 @@ impl<'a> WorldScene {
                         .read_texmap(ctx, cell.graphic as u32)
                         .as_ref()
                         .map(|tile| {
-                            let skewed = if (tile.width() == 64) {
-                                Skewable::new(ctx, tile.clone(), [[0.5 * 0.6875, 0.0], [1.0 * 0.6875, 0.50 * 0.6875], [0.5 * 0.6875, 1.0 * 0.6875], [0.0, 0.5 * 0.6875]])
-                            } else {
-                                Skewable::new(ctx, tile.clone(), [[0.5 * 0.34375, 0.0], [1.0 * 0.34375, 0.50 * 0.34375], [0.5 * 0.34375, 1.0 * 0.34375], [0.0, 0.5 * 0.34375]])
-                            };
+                            let skewed = skew(ctx, tile, &altitudes);
                             let new_transform = add(
                                 add(cell_at(x as i32, y as i32), transform),
-                                Point2::new(0.0, -cell.altitude as f32),
+                                Point2::new(0.0, -(cell.altitude as f32 * 4.0)),
                             );
                             graphics::draw(ctx, &skewed, DrawParam::default().dest(new_transform))
                         })

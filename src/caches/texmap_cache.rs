@@ -4,7 +4,7 @@ use image_convert::image_to_surface;
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
-use uorustlibs::texmaps::{TexMapsReader};
+use uorustlibs::texmaps::TexMapsReader;
 
 pub struct TexMapCache {
     tex_map_cache: HashMap<u32, Option<Image>>,
@@ -12,7 +12,7 @@ pub struct TexMapCache {
 }
 
 impl TexMapCache {
-    pub fn new() -> TexMapCache{
+    pub fn new() -> TexMapCache {
         let reader = TexMapsReader::new(
             &Path::new("./assets/texidx.mul"),
             &Path::new("./assets/texmaps.mul"),
@@ -42,4 +42,3 @@ impl TexMapCache {
         }
     }
 }
-

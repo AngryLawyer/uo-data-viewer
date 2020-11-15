@@ -5,12 +5,10 @@ version = "0.0.1"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
 
 [dependencies]
+ggez = { git = "https://github.com/AngryLawyer/uo-rust-libs.git", branch = "skewable-images" }
 cgmath = { version = "0.17", features = ["mint"]}
 image = "0.18"
 
 
 [dependencies.uo-rust-libs]
 git = "https://github.com/AngryLawyer/uo-rust-libs.git"
-
-[dependencies.ggez]
-path = "../ggez"

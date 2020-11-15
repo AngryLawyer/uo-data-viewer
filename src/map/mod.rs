@@ -1,12 +1,11 @@
-
 use std::fs::File;
 use std::io::Result;
 use std::path::Path;
 
-use uorustlibs::map::{MapReader, StaticReader, Block, StaticLocation};
+use uorustlibs::map::{Block, MapReader, StaticLocation, StaticReader};
 
+use crate::caches::facet_cache::{Altitudes, FacetCache};
 use uorustlibs::map::map_size::{FELUCCA, ILSHENAR, MALAS, TRAMMEL};
-use crate::caches::facet_cache::{FacetCache, Altitudes};
 
 pub fn map_id_to_facet(id: u8) -> Facet {
     let corrected_id = if id as usize >= MAP_DETAILS.len() {
@@ -52,7 +51,7 @@ pub const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 
 ];
 
 pub struct Facet {
-    facet_cache: FacetCache
+    facet_cache: FacetCache,
 }
 
 impl Facet {
@@ -63,15 +62,11 @@ impl Facet {
         width_blocks: u32,
         height_blocks: u32,
     ) -> Facet {
-        let facet_cache = FacetCache::new(MapReader::new(map_path, width_blocks, height_blocks).unwrap(), StaticReader::new(
-            static_index,
-            static_path,
-            width_blocks,
-            height_blocks
-        ).unwrap());
-        Facet {
-            facet_cache
-        }
+        let facet_cache = FacetCache::new(
+            MapReader::new(map_path, width_blocks, height_blocks).unwrap(),
+            StaticReader::new(static_index, static_path, width_blocks, height_blocks).unwrap(),
+        );
+        Facet { facet_cache }
     }
 
     pub fn read_block(&mut self, x: u32, y: u32) -> ((Block, Vec<StaticLocation>), Vec<Altitudes>) {
