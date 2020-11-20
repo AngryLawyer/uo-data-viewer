@@ -63,10 +63,14 @@ impl FacetCache {
                     } else {
                         block_y2.cells[x].altitude
                     };
-                    let x2y2 = if x < 7 && y < 7 {
-                        block.cells[(y + 1) * 8 + x + 1].altitude
-                    } else {
+                    let x2y2 = if x == 7 && y == 7 {
                         block_x2y2.cells[0].altitude
+                    } else if x == 7 {
+                        block_x2.cells[(y + 1) * 8].altitude
+                    } else if y == 7 {
+                        block_y2.cells[x + 1].altitude
+                    } else {
+                        block.cells[(y + 1) * 8 + x + 1].altitude
                     };
                     collector.push(Altitudes {
                         x1y1,
