@@ -8,6 +8,7 @@ use uorustlibs::art::{Art, ArtReader};
 
 pub struct ArtCache {
     tile_cache: HashMap<u32, Option<Image>>,
+    static_cache: HashMap<u32, Option<Image>>,
     reader: ArtReader<File>,
 }
 
@@ -20,6 +21,7 @@ impl ArtCache {
         .expect("Could not load art");
         ArtCache {
             tile_cache: HashMap::new(),
+            static_cache: HashMap::new(),
             reader,
         }
     }
@@ -39,6 +41,24 @@ impl ArtCache {
                 }
             }
             self.tile_cache.get(&id).unwrap()
+        }
+    }
+
+    pub fn read_static(&mut self, ctx: &mut Context, id: u32) -> &Option<Image> {
+        if self.static_cache.contains_key(&id) {
+            self.static_cache.get(&id).unwrap()
+        } else {
+            match self.reader.read_static(id) {
+                Ok(tile) => {
+                    let image = tile.to_image();
+                    let tile_image = image_to_surface(ctx, &image);
+                    self.static_cache.insert(id, Some(tile_image));
+                }
+                Err(_) => {
+                    self.static_cache.insert(id, None);
+                }
+            }
+            self.static_cache.get(&id).unwrap()
         }
     }
 }

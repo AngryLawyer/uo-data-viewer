@@ -3,7 +3,7 @@ use caches::facet_cache::Altitudes;
 use caches::texmap_cache::TexMapCache;
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
-use ggez::graphics::{self, DrawParam, Image, Skewable};
+use ggez::graphics::{self, DrawParam, Image, Skewable, Drawable};
 use ggez::{Context, GameResult};
 use map::{map_id_to_facet, Facet, MAP_DETAILS};
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
@@ -13,6 +13,11 @@ const STEP_X: u32 = 1;
 const STEP_Y: u32 = 1;
 const MAX_BLOCKS_WIDTH: u32 = 6;
 const MAX_BLOCKS_HEIGHT: u32 = 6;
+
+enum DrawableItem {
+    Image(Image),
+    Skewable(Skewable)
+}
 
 pub struct WorldScene {
     art_cache: ArtCache,
@@ -108,12 +113,14 @@ impl<'a> WorldScene {
         &mut self,
         ctx: &mut Context,
         block: &Block,
-        _statics: &Vec<StaticLocation>,
+        statics: &Vec<StaticLocation>,
         altitudes: &Vec<Altitudes>,
         transform: Point2<f32>,
     ) -> GameResult<()> {
-        for y in 0..8 {
-            for x in 0..8 {
+        for y in 0..(8 as usize) {
+            for x in 0..(8 as usize) {
+                let cell_statics = statics.iter().filter(|s| s.x == x as u8 && s.y == y as u8).collect::<Vec<&StaticLocation>>();
+                let mut tiles: Vec<(DrawableItem, Point2<f32>, i8)> = vec![];
                 let cell = block.cells[y * 8 + x];
                 let altitudes = altitudes[y * 8 + x];
                 let cell_height = altitudes.x1y1;
@@ -132,9 +139,9 @@ impl<'a> WorldScene {
                                 add(cell_at(x as i32, y as i32), transform),
                                 Point2::new(0.0, -(cell.altitude as f32 * 4.0)),
                             );
-                            graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
-                        })
-                        .unwrap_or(Ok(()))?;
+                            tiles.push((DrawableItem::Image(tile.clone()), new_transform, cell.altitude));
+                            //graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
+                        });
                 } else {
                     self.texmap_cache
                         .read_texmap(ctx, cell.graphic as u32)
@@ -145,9 +152,30 @@ impl<'a> WorldScene {
                                 add(cell_at(x as i32, y as i32), transform),
                                 Point2::new(0.0, -(cell.altitude as f32 * 4.0)),
                             );
-                            graphics::draw(ctx, &skewed, DrawParam::default().dest(new_transform))
-                        })
-                        .unwrap_or(Ok(()))?;
+                            tiles.push((DrawableItem::Skewable(skewed), new_transform, cell.altitude));
+                            //graphics::draw(ctx, &skewed, DrawParam::default().dest(new_transform))
+                        });
+                }
+                // TODO: We need to order these by Y value
+                for s in cell_statics {
+                    self.art_cache
+                        .read_static(ctx, s.object_id as u32)
+                        .as_ref()
+                        .map(|art| {
+                            let new_transform = add(
+                                add(cell_at(x as i32, y as i32), transform),
+                                Point2::new(0.0, -(s.altitude as f32 * 4.0) - art.height() as f32 + 44.0),
+                            );
+                            tiles.push((DrawableItem::Image(art.clone()), new_transform, s.altitude));
+                            //graphics::draw(ctx, art, DrawParam::default().dest(new_transform))
+                        });
+                }
+                tiles.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+                for (gfx, point, _) in tiles {
+                    match gfx {
+                        DrawableItem::Image(ref img) => graphics::draw(ctx, img, DrawParam::default().dest(point)),
+                        DrawableItem::Skewable(ref img) => graphics::draw(ctx, img, DrawParam::default().dest(point))
+                    }?
                 }
             }
         }
