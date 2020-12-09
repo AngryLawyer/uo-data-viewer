@@ -8,6 +8,8 @@ use ggez::{Context, GameResult};
 use map::{map_id_to_facet, Facet, MAP_DETAILS};
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use uorustlibs::map::{Block, StaticLocation};
+use uorustlibs::tiledata::{MapTileData, StaticTileData, TileDataReader, Flags};
+use std::cmp::Ordering;
 
 const STEP_X: u32 = 1;
 const STEP_Y: u32 = 1;
@@ -15,8 +17,9 @@ const MAX_BLOCKS_WIDTH: u32 = 6;
 const MAX_BLOCKS_HEIGHT: u32 = 6;
 
 enum DrawableItem {
-    Image(Image),
-    Skewable(Skewable)
+    Static(Image, StaticTileData),
+    Tile(Image, MapTileData),
+    Skewable(Skewable, MapTileData)
 }
 
 pub struct WorldScene {
@@ -103,7 +106,7 @@ impl<'a> WorldScene {
                 let ((ref block, ref statics), ref altitudes) =
                     self.facet.read_block(x + self.x, y + self.y);
                 let transform = block_at(x as i32, y as i32);
-                self.draw_block(ctx, block, statics, altitudes, transform)?
+                self.draw_block(ctx, block, statics, altitudes, transform)?;
             }
         }
         Ok(())
@@ -127,55 +130,70 @@ impl<'a> WorldScene {
                 let cell_x2y1_height = altitudes.x2y1;
                 let cell_x1y2_height = altitudes.x1y2;
                 let cell_x2y2_height = altitudes.x2y2;
-                if (cell_height == cell_x1y2_height
-                    && cell.altitude == cell_x2y1_height
-                    && cell.altitude == cell_x2y2_height)
-                {
-                    self.art_cache
-                        .read_tile(ctx, cell.graphic as u32)
-                        .as_ref()
-                        .map(|tile| {
-                            let new_transform = add(
-                                add(cell_at(x as i32, y as i32), transform),
-                                Point2::new(0.0, -(cell.altitude as f32 * 4.0)),
-                            );
-                            tiles.push((DrawableItem::Image(tile.clone()), new_transform, cell.altitude));
-                            //graphics::draw(ctx, tile, DrawParam::default().dest(new_transform))
-                        });
-                } else {
-                    self.texmap_cache
-                        .read_texmap(ctx, cell.graphic as u32)
-                        .as_ref()
-                        .map(|tile| {
-                            let skewed = skew(ctx, tile, &altitudes);
-                            let new_transform = add(
-                                add(cell_at(x as i32, y as i32), transform),
-                                Point2::new(0.0, -(cell.altitude as f32 * 4.0)),
-                            );
-                            tiles.push((DrawableItem::Skewable(skewed), new_transform, cell.altitude));
-                            //graphics::draw(ctx, &skewed, DrawParam::default().dest(new_transform))
-                        });
-                }
-                // TODO: We need to order these by Y value
+
+                let data: Option<(Image, MapTileData)> = match self.art_cache.read_tile(ctx, cell.graphic as u32) {
+                    Some((ref tile, ref tiledata)) => Some((tile.clone(), tiledata.clone())),
+                    _ => None
+                };
+                
+                
+                data.map(|(tile, tiledata)| {
+                    let new_transform = add(
+                        add(cell_at(x as i32, y as i32), transform),
+                        Point2::new(0.0, -(cell.altitude as f32 * 4.0)),
+                    );
+                    if (cell_height == cell_x1y2_height
+                        && cell.altitude == cell_x2y1_height
+                        && cell.altitude == cell_x2y2_height)
+                    {
+                        tiles.push((DrawableItem::Tile(tile.clone(), tiledata), new_transform, cell.altitude));
+                    } else {
+                        self.texmap_cache
+                            .read_texmap(ctx, tiledata.texture_id as u32)
+                            .as_ref()
+                            .map(|tile| {
+                                let skewed = skew(ctx, tile, &altitudes);
+                                tiles.push((DrawableItem::Skewable(skewed, tiledata), new_transform, cell.altitude - 1));
+                            });
+                    }
+                });
                 for s in cell_statics {
                     self.art_cache
                         .read_static(ctx, s.object_id as u32)
                         .as_ref()
-                        .map(|art| {
+                        .map(|(ref art, ref tiledata)| {
                             let new_transform = add(
                                 add(cell_at(x as i32, y as i32), transform),
                                 Point2::new(0.0, -(s.altitude as f32 * 4.0) - art.height() as f32 + 44.0),
                             );
-                            tiles.push((DrawableItem::Image(art.clone()), new_transform, s.altitude));
-                            //graphics::draw(ctx, art, DrawParam::default().dest(new_transform))
+                            tiles.push((DrawableItem::Static(art.clone(), tiledata.clone()), new_transform, s.altitude));
                         });
                 }
-                tiles.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+                tiles.sort_by(|a, b| match a.2.cmp(&b.2) {
+                    Ordering::Equal => {
+                        match (&a.0, &b.0) {
+                            (&DrawableItem::Static(_, ref tiledata), DrawableItem::Static(_, _)) => {
+                                if (tiledata.flags & Flags::BackgroundFlag as u32 != 0) {
+                                    Ordering::Less
+                                } else {
+                                    Ordering::Greater
+                                }
+                            }
+                            (&DrawableItem::Static(_, ref tiledata), _) => Ordering::Greater,
+                            _ => Ordering::Less
+                        }
+                    },
+                    otherwise => otherwise
+                });
                 for (gfx, point, _) in tiles {
                     match gfx {
-                        DrawableItem::Image(ref img) => graphics::draw(ctx, img, DrawParam::default().dest(point)),
-                        DrawableItem::Skewable(ref img) => graphics::draw(ctx, img, DrawParam::default().dest(point))
-                    }?
+                        DrawableItem::Static(ref img, ref tiledata) => {
+                            let new_point = add(point, Point2::new(tiledata.))
+                            graphics::draw(ctx, img, DrawParam::default().dest(point))
+                        },
+                        DrawableItem::Tile(ref img, ref tiledata) => graphics::draw(ctx, img, DrawParam::default().dest(point)),
+                        DrawableItem::Skewable(ref img, ref tiledata) => graphics::draw(ctx, img, DrawParam::default().dest(point))
+                    }?;
                 }
             }
         }
