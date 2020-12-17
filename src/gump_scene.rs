@@ -32,6 +32,40 @@ impl<'a> GumpScene {
         scene
     }
 
+    fn cycle_backward(&mut self) {
+        match self.reader {
+            Ok(ref mut reader) => {
+                while self.index > 0 {
+                    self.index -= 1;
+                    match reader.read_gump(self.index) {
+                        Ok(_) => {
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            },
+            _ => {}
+        }
+    }
+
+    fn cycle_forward(&mut self) {
+        match self.reader {
+            Ok(ref mut reader) => {
+                loop {
+                    self.index += 1;
+                    match reader.read_gump(self.index) {
+                        Ok(_) => {
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            },
+            _ => {}
+        }
+    }
+
     fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
         let dest = Canvas::with_window_size(ctx)?;
         graphics::set_canvas(ctx, Some(&dest));
@@ -102,13 +136,11 @@ impl Scene<SceneName, ()> for GumpScene {
         match keycode {
             KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
-                if self.index > 0 {
-                    self.index -= 1;
-                    self.create_slice(ctx).expect("Failed to create slice");
-                }
+                self.cycle_backward();
+                self.create_slice(ctx).expect("Failed to create slice");
             }
             KeyCode::Right => {
-                self.index += 1;
+                self.cycle_forward();
                 self.create_slice(ctx).expect("Failed to create slice");
             }
             _ => (),

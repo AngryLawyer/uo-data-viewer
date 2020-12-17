@@ -28,7 +28,7 @@ impl<'a> AnimScene {
         ); //FIXME: Multiple anim muls!
         let mut scene = Box::new(AnimScene {
             reader: reader,
-            index: 110,
+            index: 0,
             textures: vec![],
             exiting: false,
             current_frame: 0,
@@ -67,6 +67,7 @@ impl<'a> AnimScene {
             ),
             _ => panic!("NO"),
         };
+        self.index = 0;
         self.load_reader(ctx, &idx, &mul)
     }
 
@@ -129,6 +130,40 @@ impl<'a> AnimScene {
         self.current_frame = 0;
         Ok(())
     }
+
+    fn cycle_backward(&mut self) {
+        match self.reader {
+            Ok(ref mut reader) => {
+                while self.index > 0 {
+                    self.index -= 1;
+                    match reader.read(self.index) {
+                        Ok(_) => {
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            },
+            _ => {}
+        }
+    }
+
+    fn cycle_forward(&mut self) {
+        match self.reader {
+            Ok(ref mut reader) => {
+                loop {
+                    self.index += 1;
+                    match reader.read(self.index) {
+                        Ok(_) => {
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            },
+            _ => {}
+        }
+    }
 }
 
 impl Scene<SceneName, ()> for AnimScene {
@@ -176,25 +211,13 @@ impl Scene<SceneName, ()> for AnimScene {
             KeyCode::Escape => self.exiting = true,
             KeyCode::Left => {
                 if self.index > 0 {
-                    self.index -= 1;
+                    self.cycle_backward();
                     self.current_frame = 0;
                     self.create_slice(ctx).expect("Failed to create slice");
                 }
             }
             KeyCode::Right => {
-                self.index += 1;
-                self.current_frame = 0;
-                self.create_slice(ctx).expect("Failed to create slice");
-            }
-            KeyCode::PageDown => {
-                if self.index > 0 {
-                    self.index = cmp::max(self.index - 10, 0);
-                    self.current_frame = 0;
-                    self.create_slice(ctx).expect("Failed to create slice");
-                }
-            }
-            KeyCode::PageUp => {
-                self.index += 10;
+                self.cycle_forward();
                 self.current_frame = 0;
                 self.create_slice(ctx).expect("Failed to create slice");
             }

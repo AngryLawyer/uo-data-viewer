@@ -188,7 +188,6 @@ impl<'a> WorldScene {
                 for (gfx, point, _) in tiles {
                     match gfx {
                         DrawableItem::Static(ref img, ref tiledata) => {
-                            let new_point = add(point, Point2::new(tiledata.))
                             graphics::draw(ctx, img, DrawParam::default().dest(point))
                         },
                         DrawableItem::Tile(ref img, ref tiledata) => graphics::draw(ctx, img, DrawParam::default().dest(point)),
