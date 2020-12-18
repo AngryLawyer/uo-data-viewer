@@ -11,7 +11,7 @@ pub struct ArtCache {
     tile_cache: HashMap<u32, Option<(Image, MapTileData)>>,
     static_cache: HashMap<u32, Option<(Image, StaticTileData)>>,
     reader: ArtReader<File>,
-    tiledata_reader: TileDataReader
+    tiledata_reader: TileDataReader<File>
 }
 
 impl ArtCache {

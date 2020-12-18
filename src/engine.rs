@@ -11,6 +11,7 @@ use texmaps_scene;
 use tile_scene;
 use title_scene;
 use world_scene;
+use font_scene;
 
 pub struct Engine<'a> {
     scene_stack: Option<SceneStack<'a, SceneName, ()>>,
@@ -41,6 +42,7 @@ impl<'a> Engine<'a> {
             SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
             SceneName::MapScene => map_scene::MapScene::new(ctx),
             SceneName::WorldScene => world_scene::WorldScene::new(),
+            SceneName::FontScene => font_scene::FontScene::new(ctx),
         }
     }
 }

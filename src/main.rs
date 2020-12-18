@@ -17,6 +17,7 @@ mod statics_scene;
 mod texmaps_scene;
 mod tile_scene;
 mod title_scene;
+mod font_scene;
 mod world_scene;
 
 use ggez::conf::WindowSetup;

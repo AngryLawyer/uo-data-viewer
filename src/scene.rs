@@ -13,6 +13,7 @@ pub enum SceneName {
     AnimScene,
     TexMapsScene,
     WorldScene,
+    FontScene,
 }
 
 pub type BoxedScene<'a, SceneChangeParamsT, EngineDataT> =

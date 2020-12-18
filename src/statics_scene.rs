@@ -15,7 +15,7 @@ static MAX_Y: u32 = 3;
 
 pub struct StaticsScene {
     reader: Result<ArtReader<File>>,
-    data: Result<TileDataReader>,
+    data: Result<TileDataReader<File>>,
     index: u32,
     texture: Option<Canvas>,
     tile_data: Vec<Result<StaticTileData>>,

@@ -12,7 +12,7 @@ pub struct TitleScene {
 impl<'a> TitleScene {
     pub fn new() -> BoxedScene<'a, SceneName, ()> {
         Box::new(TitleScene {
-            text: Text::new("1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene\n8. TexMaps Scene\n9. World Scene"),
+            text: Text::new("1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene\n8. TexMaps Scene\n9. World Scene\n0. Font Scene"),
             last_event: None
         })
     }
@@ -51,6 +51,7 @@ impl Scene<SceneName, ()> for TitleScene {
             KeyCode::Key7 => Some(SceneChangeEvent::PushScene(SceneName::AnimScene)),
             KeyCode::Key8 => Some(SceneChangeEvent::PushScene(SceneName::TexMapsScene)),
             KeyCode::Key9 => Some(SceneChangeEvent::PushScene(SceneName::WorldScene)),
+            KeyCode::Key0 => Some(SceneChangeEvent::PushScene(SceneName::FontScene)),
             _ => None,
         }
     }
