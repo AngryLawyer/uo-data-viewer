@@ -3,7 +3,7 @@ use caches::facet_cache::Altitudes;
 use caches::texmap_cache::TexMapCache;
 use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
-use ggez::graphics::{self, DrawParam, Image, Skewable, Drawable};
+use ggez::graphics::{self, DrawParam, Image, Drawable, MeshBuilder, Mesh, Vertex};
 use ggez::{Context, GameResult};
 use map::{map_id_to_facet, Facet, MAP_DETAILS};
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
@@ -15,11 +15,12 @@ const STEP_X: u32 = 1;
 const STEP_Y: u32 = 1;
 const MAX_BLOCKS_WIDTH: u32 = 6;
 const MAX_BLOCKS_HEIGHT: u32 = 6;
+const TILE_SIZE: f32 = 44.0;
 
 enum DrawableItem {
     Static(Image, StaticTileData),
     Tile(Image, MapTileData),
-    Skewable(Skewable, MapTileData)
+    Skewable(Mesh, MapTileData)
 }
 
 pub struct WorldScene {
@@ -50,40 +51,62 @@ fn block_at(x: i32, y: i32) -> Point2<f32> {
         ((22 * 8) * y + (x * (22 * 8)) - (22 * 24)) as f32,
     )
 }
+    fn generate_vertices(params: &[[f32; 2]; 4]) -> [Vertex; 4] {
+        [
+            Vertex {
+                pos: params[0],
+                uv: [
+                    0.0,
+                    0.0,
+                ],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+            Vertex {
+                pos: params[1],
+                uv: [
+                    1.0,
+                    0.0,
+                ],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+            Vertex {
+                pos: params[2],
+                uv: [
+                    1.0,
+                    1.0,
+                ],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+            Vertex {
+                pos: params[3],
+                uv: [
+                    0.0,
+                    1.0
+                ],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+        ]
+    }
 
-fn skew(ctx: &mut Context, tile: &Image, altitudes: &Altitudes) -> Skewable {
-    let small_tile_ratio = 0.6875;
-    let large_tile_ratio = 0.34375;
+fn skew(ctx: &mut Context, tile: &Image, altitudes: &Altitudes) -> Mesh {
     let top_right = altitudes.x2y1 - altitudes.x1y1;
     let bottom_right = altitudes.x2y2 - altitudes.x1y1;
     let bottom_left = altitudes.x1y2 - altitudes.x1y1;
     
-    let skewed = if (tile.width() == 64) {
-        let increment = 4.0 / 64.0;
-        Skewable::new(
-            ctx,
-            tile.clone(),
-            [
-                [0.5 * small_tile_ratio, 0.0],
-                [1.0 * small_tile_ratio, 0.5 * small_tile_ratio - (increment * top_right as f32)],
-                [0.5 * small_tile_ratio, 1.0 * small_tile_ratio - (increment * bottom_right as f32)],
-                [0.0, 0.5 * small_tile_ratio - (increment * bottom_left as f32)],
-            ],
+    let increment = 4.0;
+    let vertices = generate_vertices(&[
+        [0.5 * TILE_SIZE, 0.0],
+        [1.0 * TILE_SIZE, 0.5 * TILE_SIZE - (increment * top_right as f32)],
+        [0.5 * TILE_SIZE, 1.0 * TILE_SIZE - (increment * bottom_right as f32)],
+        [0.0, 0.5 * TILE_SIZE - (increment * bottom_left as f32)],
+    ]);
+    MeshBuilder::new()
+        .raw(
+            &vertices,
+            &[0, 1, 2, 0, 2, 3],
+            Some(tile.clone())
         )
-    } else {
-        let increment = 4.0 / 128.0;
-        Skewable::new(
-            ctx,
-            tile.clone(),
-            [
-                [0.5 * large_tile_ratio, 0.0],
-                [1.0 * large_tile_ratio, 0.5 * large_tile_ratio - (increment * top_right as f32)],
-                [0.5 * large_tile_ratio, 1.0 * large_tile_ratio - (increment * bottom_right as f32)],
-                [0.0, 0.5 * large_tile_ratio - (increment * bottom_left as f32)],
-            ],
-        )
-    };
-    skewed
+        .build(ctx).expect("Failed to generate mesh")
 }
 
 impl<'a> WorldScene {
@@ -164,7 +187,7 @@ impl<'a> WorldScene {
                         .map(|(ref art, ref tiledata)| {
                             let new_transform = add(
                                 add(cell_at(x as i32, y as i32), transform),
-                                Point2::new(0.0, -(s.altitude as f32 * 4.0) - art.height() as f32 + 44.0),
+                                Point2::new(0.0, -(s.altitude as f32 * 4.0) - art.height() as f32 + TILE_SIZE),
                             );
                             tiles.push((DrawableItem::Static(art.clone(), tiledata.clone()), new_transform, s.altitude));
                         });

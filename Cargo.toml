@@ -5,7 +5,7 @@ version = "0.0.1"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
 
 [dependencies]
-ggez = { git = "https://github.com/AngryLawyer/ggez.git", branch = "skewable-images" }
+ggez = "0.5"
 cgmath = { version = "0.17", features = ["mint"]}
 image = "0.18"
 
