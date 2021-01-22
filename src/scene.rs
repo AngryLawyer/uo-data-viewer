@@ -14,6 +14,7 @@ pub enum SceneName {
     TexMapsScene,
     WorldScene,
     FontScene,
+    MapDiffScene,
 }
 
 pub type BoxedScene<'a, SceneChangeParamsT, EngineDataT> =

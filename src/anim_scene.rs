@@ -86,7 +86,7 @@ impl<'a> AnimScene {
                         let dest = Canvas::with_window_size(ctx)?;
                         graphics::set_canvas(ctx, Some(&dest));
                         graphics::clear(ctx, graphics::BLACK);
-                        let surface = frame_to_surface(ctx, &frame);
+                        let surface = frame_to_surface(ctx, &frame.unwrap());
                         graphics::draw(
                             ctx,
                             &surface,
@@ -143,22 +143,20 @@ impl<'a> AnimScene {
                         _ => {}
                     }
                 }
-            },
+            }
             _ => {}
         }
     }
 
     fn cycle_forward(&mut self) {
         match self.reader {
-            Ok(ref mut reader) => {
-                loop {
-                    self.index += 1;
-                    match reader.read(self.index) {
-                        Ok(_) => {
-                            break;
-                        }
-                        _ => {}
+            Ok(ref mut reader) => loop {
+                self.index += 1;
+                match reader.read(self.index) {
+                    Ok(_) => {
+                        break;
                     }
+                    _ => {}
                 }
             },
             _ => {}

@@ -7,7 +7,7 @@ authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
 [dependencies]
 ggez = "0.5"
 cgmath = { version = "0.17", features = ["mint"]}
-image = "0.18"
+image = "0.23"
 
 
 [dependencies.uo-rust-libs]

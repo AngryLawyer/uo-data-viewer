@@ -2,10 +2,12 @@ use std::fs::File;
 use std::io::Result;
 use std::path::Path;
 
+pub mod render;
+
 use uorustlibs::map::{Block, MapReader, StaticLocation, StaticReader};
 
 use crate::caches::facet_cache::{Altitudes, FacetCache};
-use uorustlibs::map::map_size::{FELUCCA, ILSHENAR, MALAS, TRAMMEL};
+use uorustlibs::map::map_size::{ILSHENAR, MALAS, SOSARIA, TER_MUR, TOKUNO};
 
 pub fn map_id_to_facet(id: u8) -> Facet {
     let corrected_id = if id as usize >= MAP_DETAILS.len() {
@@ -23,18 +25,18 @@ pub fn map_id_to_facet(id: u8) -> Facet {
     )
 }
 
-pub const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 4] = [
+pub const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 5] = [
     (
         "./assets/map0.mul",
         "./assets/staidx0.mul",
         "./assets/statics0.mul",
-        TRAMMEL,
+        SOSARIA,
     ),
     (
         "./assets/map0.mul",
         "./assets/staidx0.mul",
         "./assets/statics0.mul",
-        FELUCCA,
+        SOSARIA,
     ),
     (
         "./assets/map2.mul",
@@ -47,6 +49,12 @@ pub const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 
         "./assets/staidx3.mul",
         "./assets/statics3.mul",
         MALAS,
+    ),
+    (
+        "./assets/map4.mul",
+        "./assets/staidx4.mul",
+        "./assets/statics4.mul",
+        TOKUNO,
     ),
 ];
 

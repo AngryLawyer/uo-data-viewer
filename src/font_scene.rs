@@ -2,15 +2,14 @@ use cgmath::Point2;
 use ggez::event::{KeyCode, KeyMods};
 use ggez::graphics::{self, Canvas, Color, DrawParam, Text};
 use ggez::{Context, GameResult};
+use image_convert::image_to_surface;
 use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
 use std::io::Error;
 use std::io::Result;
 use std::path::Path;
 use uorustlibs::color::Color as ColorTrait;
-use uorustlibs::fonts::{FontReader, Font};
-use image_convert::image_to_surface;
-
+use uorustlibs::fonts::{Font, FontReader};
 
 pub struct FontScene {
     reader: Result<FontReader<File>>,
@@ -27,7 +26,7 @@ impl<'a> FontScene {
             texture: None,
             index: 0,
             exiting: false,
-            fonts: vec![]
+            fonts: vec![],
         });
         scene.load_fonts(ctx).expect("Failed to create slice");
         scene.draw_font(ctx).expect("Failed to create image");
@@ -36,10 +35,10 @@ impl<'a> FontScene {
 
     fn load_fonts(&mut self, ctx: &mut Context) -> GameResult<()> {
         match &mut self.reader {
-            Ok(reader) => { 
+            Ok(reader) => {
                 self.fonts = reader.read_fonts()?;
-            },
-            _ => ()
+            }
+            _ => (),
         }
         Ok(())
     }
@@ -63,8 +62,8 @@ impl<'a> FontScene {
                     }
                 }
                 graphics::set_canvas(ctx, None);
-            },
-            None =>  {
+            }
+            None => {
                 graphics::set_canvas(ctx, Some(&dest));
                 graphics::clear(ctx, graphics::BLACK);
                 graphics::set_canvas(ctx, None);
@@ -124,4 +123,3 @@ impl Scene<SceneName, ()> for FontScene {
         }
     }
 }
-

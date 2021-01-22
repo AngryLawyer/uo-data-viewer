@@ -44,22 +44,20 @@ impl<'a> GumpScene {
                         _ => {}
                     }
                 }
-            },
+            }
             _ => {}
         }
     }
 
     fn cycle_forward(&mut self) {
         match self.reader {
-            Ok(ref mut reader) => {
-                loop {
-                    self.index += 1;
-                    match reader.read_gump(self.index) {
-                        Ok(_) => {
-                            break;
-                        }
-                        _ => {}
+            Ok(ref mut reader) => loop {
+                self.index += 1;
+                match reader.read_gump(self.index) {
+                    Ok(_) => {
+                        break;
                     }
+                    _ => {}
                 }
             },
             _ => {}
