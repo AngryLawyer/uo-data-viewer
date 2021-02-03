@@ -72,6 +72,7 @@ pub fn skew(ctx: &mut Context, tile: &Image, altitudes: &Altitudes) -> Mesh {
     ]);
     MeshBuilder::new()
         .raw(&vertices, &[0, 1, 2, 0, 2, 3], Some(tile.clone()))
+        .expect("Failed to create raw mesh")
         .build(ctx)
         .expect("Failed to generate mesh")
 }

@@ -38,8 +38,5 @@ fn main() {
     let mut my_game = engine::Engine::new(&mut ctx);
 
     // Run!
-    match event::run(&mut ctx, &mut event_loop, &mut my_game) {
-        Ok(_) => println!("Exited cleanly."),
-        Err(e) => println!("Error occured: {}", e),
-    }
+    event::run(ctx, event_loop, my_game);
 }

@@ -53,12 +53,15 @@ impl<'a> FontScene {
                 let mut y = 0.0;
                 for i in 0..font.characters.len() {
                     let image = font.characters[i].to_image();
-                    let surface = image_to_surface(ctx, &image);
-                    graphics::draw(ctx, &surface, DrawParam::default().dest(Point2::new(x, y)))?;
-                    x += image.width() as f32;
-                    if i % 20 == 0 && i > 0 {
-                        x = 0.0;
-                        y += image.height() as f32;
+                    println!("{} {}", image.width(), image.height());
+                    if image.width() != 0 && image.height() != 0 {
+                        let surface = image_to_surface(ctx, &image);
+                        graphics::draw(ctx, &surface, DrawParam::default().dest(Point2::new(x, y)))?;
+                        x += image.width() as f32;
+                        if i % 20 == 0 && i > 0 {
+                            x = 0.0;
+                            y += image.height() as f32;
+                        }
                     }
                 }
                 graphics::set_canvas(ctx, None);
