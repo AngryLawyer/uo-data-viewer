@@ -53,7 +53,6 @@ impl<'a> FontScene {
                 let mut y = 0.0;
                 for i in 0..font.characters.len() {
                     let image = font.characters[i].to_image();
-                    println!("{} {}", image.width(), image.height());
                     if image.width() != 0 && image.height() != 0 {
                         let surface = image_to_surface(ctx, &image);
                         graphics::draw(ctx, &surface, DrawParam::default().dest(Point2::new(x, y)))?;
