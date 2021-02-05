@@ -86,30 +86,30 @@ impl<'a> AnimScene {
                         let dest = Canvas::with_window_size(ctx)?;
                         graphics::set_canvas(ctx, Some(&dest));
                         graphics::clear(ctx, graphics::BLACK);
-                        let surface = frame_to_surface(ctx, &frame.unwrap());
-                        graphics::draw(
-                            ctx,
-                            &surface,
-                            DrawParam::default().dest(Point2::new(offset, 0.0)),
-                        )?;
+                        let top = match frame {
+                            Ok(f) => {
+                                let surface = frame_to_surface(ctx, &f);
+                                graphics::draw(
+                                    ctx,
+                                    &surface,
+                                    DrawParam::default().dest(Point2::new(offset, 0.0)),
+                                )?;
+                                surface.height() as f32
+                            }
+                            _ => 0.0,
+                        };
 
                         let label = Text::new(format!("{}", self.index));
                         graphics::draw(
                             ctx,
                             &label,
-                            (
-                                Point2::new(offset, surface.height() as f32 + 16.0),
-                                graphics::WHITE,
-                            ),
+                            (Point2::new(offset, top + 16.0), graphics::WHITE),
                         )?;
                         let label = Text::new(format!("{} / {}", idx + 1, anim.frame_count));
                         graphics::draw(
                             ctx,
                             &label,
-                            (
-                                Point2::new(offset, surface.height() as f32 + 32.0),
-                                graphics::WHITE,
-                            ),
+                            (Point2::new(offset, top + 32.0), graphics::WHITE),
                         )?;
                         Ok(dest)
                     })

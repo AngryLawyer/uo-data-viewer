@@ -55,7 +55,11 @@ impl<'a> FontScene {
                     let image = font.characters[i].to_image();
                     if image.width() != 0 && image.height() != 0 {
                         let surface = image_to_surface(ctx, &image);
-                        graphics::draw(ctx, &surface, DrawParam::default().dest(Point2::new(x, y)))?;
+                        graphics::draw(
+                            ctx,
+                            &surface,
+                            DrawParam::default().dest(Point2::new(x, y)),
+                        )?;
                         x += image.width() as f32;
                         if i % 20 == 0 && i > 0 {
                             x = 0.0;

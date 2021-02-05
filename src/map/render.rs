@@ -102,11 +102,12 @@ pub fn draw_block(
                     let cell_x1y2_height = altitudes.x1y2;
                     let cell_x2y2_height = altitudes.x2y2;
 
-                    let data: Option<(Image, MapTileData)> =
-                        match art_cache.read_tile(ctx, cell.graphic as u32) {
-                            Some((ref tile, ref tiledata)) => Some((tile.clone(), tiledata.clone())),
-                            _ => None,
-                        };
+                    let data: Option<(Image, MapTileData)> = match art_cache
+                        .read_tile(ctx, cell.graphic as u32)
+                    {
+                        Some((ref tile, ref tiledata)) => Some((tile.clone(), tiledata.clone())),
+                        _ => None,
+                    };
 
                     data.map(|(tile, tiledata)| {
                         let new_transform = add(
@@ -136,8 +137,8 @@ pub fn draw_block(
                                 });
                         }
                     });
-                },
-                None => ()
+                }
+                None => (),
             };
             for s in cell_statics {
                 art_cache.read_static(ctx, s.object_id as u32).as_ref().map(

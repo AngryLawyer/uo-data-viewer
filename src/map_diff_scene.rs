@@ -70,7 +70,7 @@ impl<'a> MapDiffScene {
     pub fn get_next_patch(&mut self) {
         let mut keys = self.map_patches.keys().collect::<Vec<_>>();
         let mut more_keys = self.static_patches.keys().collect::<Vec<_>>();
-        
+
         keys.append(&mut more_keys);
         keys.sort();
         keys.dedup();
@@ -84,7 +84,7 @@ impl<'a> MapDiffScene {
     pub fn get_last_patch(&mut self) {
         let mut keys = self.map_patches.keys().collect::<Vec<_>>();
         let mut more_keys = self.static_patches.keys().collect::<Vec<_>>();
-        
+
         keys.append(&mut more_keys);
         keys.sort();
         keys.dedup();
@@ -106,7 +106,11 @@ impl<'a> MapDiffScene {
             Some(Ok(statics)) => statics,
             _ => &default,
         };
-        let altitudes = if block.is_some() { read_altitudes(block.unwrap(), None, None, None) } else { vec![] };
+        let altitudes = if block.is_some() {
+            read_altitudes(block.unwrap(), None, None, None)
+        } else {
+            vec![]
+        };
         let transform = Point2::new(300.0, 200.0);
         draw_block(
             ctx,
