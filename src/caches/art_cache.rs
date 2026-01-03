@@ -1,6 +1,6 @@
 use ggez::graphics::Image;
 use ggez::Context;
-use image_convert::image_to_surface;
+use crate::image_convert::image_to_surface;
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;

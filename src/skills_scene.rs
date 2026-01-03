@@ -1,11 +1,11 @@
 use std::path::Path;
+use ggez::glam::Vec2;
 use uorustlibs::skills::Skills;
 
-use cgmath::Point2;
-use ggez::event::{KeyCode, KeyMods};
-use ggez::graphics::{self, Text};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::graphics::{Canvas, Color, DrawParam, Text};
 use ggez::{Context, GameResult};
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 
 pub struct SkillsScene {
     pages: Vec<Text>,
@@ -15,8 +15,8 @@ pub struct SkillsScene {
 impl<'a> SkillsScene {
     pub fn new() -> BoxedScene<'a, SceneName, ()> {
         let skills = Skills::new(
-            &Path::new("./assets/skills.idx"),
-            &Path::new("./assets/skills.mul"),
+            Path::new("./assets/skills.idx"),
+            Path::new("./assets/skills.mul"),
         );
         let text = match skills {
             Ok(skills) => {
@@ -51,18 +51,17 @@ impl<'a> SkillsScene {
 
 impl Scene<SceneName, ()> for SkillsScene {
     fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
+        let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
         let mut last_width = 0;
         for page in self.pages.iter() {
-            let width = page.width(ctx);
-            graphics::draw(
-                ctx,
+            let width = page.measure(ctx)?.x;
+            canvas.draw(
                 page,
-                (Point2::new(last_width as f32, 0.0), graphics::WHITE),
-            )?;
+                DrawParam::default().dest(Vec2::new(last_width as f32, 0.0)).color(Color::WHITE)
+            );
             last_width += width as i32;
         }
-        Ok(())
+        canvas.finish(ctx)
     }
 
     fn update(
@@ -80,14 +79,12 @@ impl Scene<SceneName, ()> for SkillsScene {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: KeyCode,
-        _keymods: KeyMods,
+        keyinput: KeyInput,
         _repeat: bool,
         _engine_data: &mut (),
     ) {
-        match keycode {
-            KeyCode::Escape => self.exiting = true,
-            _ => (),
+        if let Some(KeyCode::Escape) = keyinput.keycode {
+            self.exiting = true;
         }
     }
 }

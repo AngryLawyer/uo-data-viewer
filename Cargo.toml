@@ -3,12 +3,12 @@
 name = "uo-data-viewer"
 version = "0.0.1"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
+edition = "2024"
 
 [dependencies]
-ggez = { git = "https://github.com/ggez/ggez.git" }
-cgmath = { version = "0.17", features = ["mint"]}
-image = "0.23"
-
+ggez = "0.9"
+image = { version = "0.25" }
 
 [dependencies.uo-rust-libs]
 git = "https://github.com/AngryLawyer/uo-rust-libs.git"
+features = ["image"]

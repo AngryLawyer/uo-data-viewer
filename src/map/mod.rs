@@ -1,8 +1,6 @@
-use std::fs::File;
-use std::io::Result;
 use std::path::Path;
 
-pub mod render;
+//pub mod render;
 
 use uorustlibs::map::{Block, MapReader, StaticLocation, StaticReader};
 
@@ -60,6 +58,8 @@ pub const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 
 
 pub struct Facet {
     facet_cache: FacetCache,
+    pub width_blocks: u32,
+    pub height_blocks: u32,
 }
 
 impl Facet {
@@ -74,7 +74,7 @@ impl Facet {
             MapReader::new(map_path, width_blocks, height_blocks).unwrap(),
             StaticReader::new(static_index, static_path, width_blocks, height_blocks).unwrap(),
         );
-        Facet { facet_cache }
+        Facet { facet_cache, width_blocks, height_blocks }
     }
 
     pub fn read_block(&mut self, x: u32, y: u32) -> ((Block, Vec<StaticLocation>), Vec<Altitudes>) {

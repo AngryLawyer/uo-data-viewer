@@ -1,4 +1,5 @@
-use ggez::event::{KeyCode, KeyMods, MouseButton};
+use ggez::input::keyboard::KeyInput;
+use ggez::event::MouseButton;
 use ggez::{Context, GameResult};
 
 #[derive(Debug, Copy, Clone)]
@@ -30,8 +31,7 @@ pub trait Scene<SceneChangeParamsT, EngineDataT> {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        _keycode: KeyCode,
-        _keymods: KeyMods,
+        _keyinput: KeyInput,
         _repeat: bool,
         _engine_data: &mut EngineDataT,
     ) {
@@ -99,15 +99,14 @@ impl<'a, SceneChangeParamsT, EngineDataT> SceneStack<'a, SceneChangeParamsT, Eng
     pub fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
-        keymods: KeyMods,
+        keyinput: KeyInput,
         repeat: bool,
         engine_data: &mut EngineDataT,
     ) {
         let maybe_last_scene = self.scenes.pop();
         match maybe_last_scene {
             Some(mut scene) => {
-                scene.key_down_event(ctx, keycode, keymods, repeat, engine_data);
+                scene.key_down_event(ctx, keyinput, repeat, engine_data);
                 self.scenes.push(scene);
             }
             None => (),

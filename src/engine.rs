@@ -1,18 +1,21 @@
+use ggez::event::{EventHandler, MouseButton};
+use ggez::input::keyboard::KeyInput;
+use ggez::{timer, Context, GameError, GameResult};
+
+use crate::scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
+use crate::title_scene;
+use crate::skills_scene;
+use crate::tile_scene;
+use crate::statics_scene;
+use crate::hues_scene;
+use crate::map_scene;
+/*
 use anim_scene;
 use font_scene;
-use ggez::event::{quit, EventHandler, KeyCode, KeyMods, MouseButton};
-use ggez::{graphics, timer, Context, GameError, GameResult};
 use gump_scene;
-use hues_scene;
 use map_diff_scene;
-use map_scene;
-use scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
-use skills_scene;
-use statics_scene;
 use texmaps_scene;
-use tile_scene;
-use title_scene;
-use world_scene;
+use world_scene;*/
 
 pub struct Engine<'a> {
     scene_stack: Option<SceneStack<'a, SceneName, ()>>,
@@ -38,13 +41,15 @@ impl<'a> Engine<'a> {
             SceneName::TileScene => tile_scene::TileScene::new(ctx),
             SceneName::StaticsScene => statics_scene::StaticsScene::new(ctx),
             SceneName::HuesScene => hues_scene::HuesScene::new(ctx),
+            SceneName::MapScene => map_scene::MapScene::new(ctx),
+            _ => panic!("OOP")
+            /*
             SceneName::TexMapsScene => texmaps_scene::TexMapsScene::new(ctx),
             SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
             SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
-            SceneName::MapScene => map_scene::MapScene::new(ctx),
             SceneName::WorldScene => world_scene::WorldScene::new(),
             SceneName::FontScene => font_scene::FontScene::new(ctx),
-            SceneName::MapDiffScene => map_diff_scene::MapDiffScene::new(ctx),
+            SceneName::MapDiffScene => map_diff_scene::MapDiffScene::new(ctx),*/
         }
     }
 }
@@ -57,7 +62,7 @@ impl<'a> EventHandler for Engine<'a> {
             .ok_or_else(|| GameError::EventLoopError("Empty scene stack".to_owned()))?;
         // Update code here...
         if scene_stack.is_empty() {
-            quit(ctx);
+            ctx.request_quit();
         } else {
             let scene_event = scene_stack.update(ctx, &mut ())?;
             match scene_event {
@@ -77,14 +82,13 @@ impl<'a> EventHandler for Engine<'a> {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut scene_stack = self
             .scene_stack
             .take()
             .ok_or_else(|| GameError::EventLoopError("Empty scene stack".to_owned()))?;
         scene_stack.draw(ctx, &mut ())?;
         self.scene_stack = Some(scene_stack);
-        graphics::present(ctx)?;
         timer::yield_now();
         Ok(())
     }
@@ -92,18 +96,19 @@ impl<'a> EventHandler for Engine<'a> {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
-        keymods: KeyMods,
+        keyinput: KeyInput,
         repeat: bool,
-    ) {
+    ) -> GameResult {
         let mut scene_stack = self.scene_stack.take().expect("Empty scene stack");
-        scene_stack.key_down_event(ctx, keycode, keymods, repeat, &mut ());
+        scene_stack.key_down_event(ctx, keyinput, repeat, &mut ());
         self.scene_stack = Some(scene_stack);
+        Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) -> GameResult {
         let mut scene_stack = self.scene_stack.take().expect("Empty scene stack");
         scene_stack.mouse_button_down_event(ctx, button, x, y, &mut ());
         self.scene_stack = Some(scene_stack);
+        Ok(())
     }
 }

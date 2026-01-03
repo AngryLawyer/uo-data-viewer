@@ -1,25 +1,23 @@
-extern crate cgmath;
-extern crate ggez;
-extern crate image;
-extern crate uorustlibs;
-
-mod anim_scene;
+mod loading_texture;
 mod caches;
+mod map;
+mod image_convert;
 mod engine;
+mod scene;
+
+mod title_scene;
+mod skills_scene;
+mod tile_scene;
+mod statics_scene;
+mod hues_scene;
+mod map_scene;
+/*
+mod anim_scene;
 mod font_scene;
 mod gump_scene;
-mod hues_scene;
-mod image_convert;
-mod map;
 mod map_diff_scene;
-mod map_scene;
-mod scene;
-mod skills_scene;
-mod statics_scene;
 mod texmaps_scene;
-mod tile_scene;
-mod title_scene;
-mod world_scene;
+mod world_scene;*/
 
 use ggez::conf::WindowSetup;
 use ggez::event;
@@ -27,7 +25,7 @@ use ggez::ContextBuilder;
 
 fn main() {
     // Make a Context.
-    let (mut ctx, mut event_loop) = ContextBuilder::new("UO Data Viewer", "Angry Lawyer")
+    let (mut ctx, event_loop) = ContextBuilder::new("UO Data Viewer", "Angry Lawyer")
         .window_setup(WindowSetup::default().title("UO Data Viewer"))
         .build()
         .expect("Could not create context");
@@ -35,7 +33,7 @@ fn main() {
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let mut my_game = engine::Engine::new(&mut ctx);
+    let my_game = engine::Engine::new(&mut ctx);
 
     // Run!
     event::run(ctx, event_loop, my_game);

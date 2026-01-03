@@ -1,9 +1,10 @@
-use cgmath::Point2;
-use ggez::event::{KeyCode, KeyMods, MouseButton};
-use ggez::graphics::{self, Canvas, DrawParam, Text};
+use ggez::event::MouseButton;
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::graphics::{Canvas, Color, DrawParam, Text, Image};
 use ggez::{Context, GameResult};
-use image_convert::image_to_surface;
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use ggez::glam::Vec2;
+use crate::image_convert::image_to_surface;
+use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
 use std::io::Result;
 use std::path::Path;
@@ -17,7 +18,7 @@ pub struct StaticsScene {
     reader: Result<ArtReader<File>>,
     data: Result<TileDataReader<File>>,
     index: u32,
-    texture: Option<Canvas>,
+    statics: Vec<(Option<Image>, Text, Vec2)>,
     tile_data: Vec<Result<StaticTileData>>,
     exiting: bool,
 }
@@ -33,78 +34,57 @@ impl<'a> StaticsScene {
             reader,
             data,
             index: 0,
-            texture: None,
+            statics: vec![],
             tile_data: vec![],
             exiting: false,
         });
-        scene.create_slice(ctx).expect("Could not create slice");
+        scene.create_slice(ctx);
 
         scene
     }
 
-    fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn create_slice(&mut self, ctx: &mut Context) {
         self.tile_data = vec![];
-        let dest = Canvas::with_window_size(ctx)?;
-        graphics::set_canvas(ctx, Some(&dest));
-        graphics::clear(ctx, graphics::BLACK);
-        match (&mut self.reader, &mut self.data) {
-            (&mut Ok(ref mut reader), &mut Ok(ref mut data)) => {
-                let limit = MAX_X * MAX_Y;
-                let start = limit * self.index;
+        self.statics = vec![];
+        if let (&mut Ok(ref mut reader), &mut Ok(ref mut data)) = (&mut self.reader, &mut self.data) {
+            let limit = MAX_X * MAX_Y;
+            let start = limit * self.index;
 
-                for y in 0..MAX_Y {
-                    for x in 0..MAX_X {
-                        let index = start + x + (y * MAX_X);
-                        let maybe_static = reader.read_static(index);
-                        match maybe_static {
-                            Ok(stat) => {
-                                let image = stat.to_image();
-                                let surface = image_to_surface(ctx, &image);
-                                graphics::draw(
-                                    ctx,
-                                    &surface,
-                                    DrawParam::default().dest(Point2::new(
-                                        128.0 * x as f32,
-                                        (128.0 + 16.0) * y as f32,
-                                    )),
-                                )?;
-                            }
-                            _ => (),
-                        }
+            for y in 0..MAX_Y {
+                for x in 0..MAX_X {
+                    let index = start + x + (y * MAX_X);
+                    let maybe_static = reader.read_static(index);
+                    let static_image = maybe_static.map(
+                        |tile| { image_to_surface(ctx, &tile.to_image()) }
+                    );
 
-                        let label = Text::new(format!("{}", index));
-                        graphics::draw(
-                            ctx,
-                            &label,
-                            (
-                                Point2::new(128.0 * x as f32, ((128.0 + 16.0) * y as f32) + 128.0),
-                                graphics::WHITE,
-                            ),
-                        )?;
-                        self.tile_data.push(data.read_static_tile_data(index));
-                    }
+                    let label = Text::new(format!("{}", index));
+                    self.statics.push((static_image.ok(), label, Vec2::new(
+                        128.0 * x as f32,
+                        (128.0 + 16.0) * y as f32,
+                    )));
+                    self.tile_data.push(data.read_static_tile_data(index));
                 }
             }
-            _ => {
-                let text = Text::new("Could not create slice");
-                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE))?;
-            }
         }
-        graphics::set_canvas(ctx, None);
-        self.texture = Some(dest);
-        Ok(())
     }
 }
 
 impl Scene<SceneName, ()> for StaticsScene {
     fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
-        match self.texture {
-            Some(ref texture) => {
-                graphics::draw(ctx, texture, DrawParam::default())?;
+        let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
+        if self.statics.is_empty() {
+            let text = Text::new("Could not create slice");
+            canvas.draw(&text, DrawParam::default().color(Color::WHITE));
+        } else {
+            for (maybe_image, text, pos) in &self.statics {
+                if let Some(image) = maybe_image {
+                    canvas.draw(image, DrawParam::default().dest(*pos));
+                }
+                canvas.draw(text, DrawParam::default().color(Color::WHITE).dest(*pos + Vec2::new(0.0, 128.0)));
             }
-            None => (),
-        };
-        Ok(())
+        }
+        canvas.finish(ctx)
     }
 
     fn update(
@@ -122,22 +102,21 @@ impl Scene<SceneName, ()> for StaticsScene {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
-        _keymods: KeyMods,
+        keyinput: KeyInput,
         _repeat: bool,
         _engine_data: &mut (),
     ) {
-        match keycode {
-            KeyCode::Escape => self.exiting = true,
-            KeyCode::Left => {
+        match keyinput.keycode {
+            Some(KeyCode::Escape) => self.exiting = true,
+            Some(KeyCode::Left) => {
                 if self.index > 0 {
                     self.index -= 1;
-                    self.create_slice(ctx).expect("Could not create slice");
+                    self.create_slice(ctx);
                 }
             }
-            KeyCode::Right => {
+            Some(KeyCode::Right) => {
                 self.index += 1;
-                self.create_slice(ctx).expect("Could not create slice");
+                self.create_slice(ctx);
             }
             _ => (),
         }
@@ -155,13 +134,8 @@ impl Scene<SceneName, ()> for StaticsScene {
         let actual_y = (y / (128.0 + 16.0)) as u32;
         if actual_x < MAX_X && actual_y < MAX_Y {
             let actual_index = (actual_x + (actual_y * MAX_X)) as usize;
-            if actual_index < self.tile_data.len() {
-                match self.tile_data[actual_index] {
-                    Ok(ref data) => {
-                        println!("{}", data.name);
-                    }
-                    _ => (),
-                }
+            if actual_index < self.tile_data.len() && let Ok(ref data) = self.tile_data[actual_index] {
+                println!("{}", data.name);
             }
         }
     }

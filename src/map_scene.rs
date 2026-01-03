@@ -1,11 +1,15 @@
-use cgmath::Point2;
-use ggez::event::{KeyCode, KeyMods};
-use ggez::graphics::{self, Canvas, DrawParam, Image};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::graphics::{Canvas, Color, DrawParam, Image, ImageFormat, ScreenImage, Text};
 use ggez::{Context, GameResult};
-use map::{map_id_to_facet, Facet, MAP_DETAILS};
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use ggez::glam::Vec2;
+use crate::image_convert::image_to_surface;
+use crate::loading_texture::LoadingTexture;
+use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use std::fs::File;
 use std::io::Result;
 use std::path::Path;
+
+use crate::map::{map_id_to_facet, Facet, MAP_DETAILS};
 use uorustlibs::color::{Color as ColorTrait, Color16};
 use uorustlibs::map::{Block, RadarColReader, StaticLocation};
 
@@ -26,7 +30,7 @@ pub struct MapScene {
     map_id: u8,
     radar_colors: Result<Vec<Color16>>,
     mode: MapRenderMode,
-    texture: Option<Canvas>,
+    texture: LoadingTexture,
     exiting: bool,
     x: u32,
     y: u32,
@@ -116,7 +120,7 @@ impl<'a> MapScene {
         let mut scene = Box::new(MapScene {
             facet: map_id_to_facet(0),
             map_id: 0,
-            texture: None,
+            texture: LoadingTexture::Waiting,
             mode: MapRenderMode::HeightMap,
             radar_colors: colors,
             exiting: false,
@@ -124,14 +128,12 @@ impl<'a> MapScene {
             y: 0,
         });
 
-        scene.draw_page(ctx).expect("Failed to draw map");
         scene
     }
 
     pub fn draw_page(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let dest = Canvas::with_window_size(ctx)?;
-        graphics::set_canvas(ctx, Some(&dest));
-        graphics::clear(ctx, graphics::BLACK);
+        let mut img = ScreenImage::new(ctx, None, 1.0, 1.0, 1);
+        let mut canvas = Canvas::from_screen_image(ctx, &mut img, Color::BLACK);
 
         let block_drawer = match self.mode {
             MapRenderMode::HeightMap => draw_heightmap_block,
@@ -139,38 +141,41 @@ impl<'a> MapScene {
             MapRenderMode::StaticsMap => draw_statics_block,
             MapRenderMode::FullMap => draw_full_block,
         };
-        for y in 0..MAX_BLOCKS_HEIGHT {
-            for x in 0..MAX_BLOCKS_WIDTH {
+        // TODO: Lazy loading, save block images
+        for y in 0..self.facet.height_blocks {
+            for x in 0..self.facet.width_blocks {
                 match self.facet.read_block(x + self.x, y + self.y) {
                     ((ref block, ref statics), _) => {
                         let mut bitmap = vec![0; 8 * 8 * 4];
                         block_drawer(&mut bitmap, block, statics, &self.radar_colors);
-                        let block_surface = Image::from_rgba8(ctx, 8, 8, &bitmap)
-                            .expect("Failed to create surface");
-                        graphics::draw(
-                            ctx,
+                        let block_surface = Image::from_pixels(ctx, &bitmap, ImageFormat::Rgba8Unorm, 8, 8);
+                        canvas.draw(
                             &block_surface,
-                            DrawParam::default().dest(Point2::new(x as f32 * 8.0, y as f32 * 8.0)),
-                        )?;
+                            DrawParam::default().dest(Vec2::new(x as f32 * 8.0, y as f32 * 8.0)),
+                        );
                     }
                 }
             }
         }
-        graphics::set_canvas(ctx, None);
-        self.texture = Some(dest);
+        canvas.finish(ctx)?;
+        self.texture = LoadingTexture::Loaded(img.image(ctx));
         Ok(())
     }
 }
 
 impl Scene<SceneName, ()> for MapScene {
     fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
+        let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
         match self.texture {
-            Some(ref texture) => {
-                graphics::draw(ctx, texture, DrawParam::default())?;
-            }
-            None => (),
-        };
-        Ok(())
+            LoadingTexture::Waiting => {
+                self.draw_page(ctx)?;
+            },
+            LoadingTexture::Loaded(ref texture) => {
+                canvas.draw(texture, DrawParam::default());
+            },
+            LoadingTexture::Failed => (),
+        }
+        canvas.finish(ctx)
     }
 
     fn update(
@@ -188,54 +193,49 @@ impl Scene<SceneName, ()> for MapScene {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
-        _keymods: KeyMods,
+        keyinput: KeyInput,
         _repeat: bool,
         _engine_data: &mut (),
     ) {
-        match keycode {
-            KeyCode::Escape => self.exiting = true,
-            KeyCode::Left => {
+        match keyinput.keycode {
+            Some(KeyCode::Escape) => self.exiting = true,
+            Some(KeyCode::Left) => {
                 if self.x >= STEP_X as u32 {
                     self.x -= STEP_X as u32;
-                    self.draw_page(ctx).expect("Failed to draw map");
                 }
             }
-            KeyCode::Right => {
+            Some(KeyCode::Right) => {
                 self.x += STEP_X as u32;
-                self.draw_page(ctx).expect("Failed to draw map");
             }
-            KeyCode::Up => {
+            Some(KeyCode::Up) => {
                 if self.y >= STEP_Y as u32 {
                     self.y -= STEP_Y as u32;
-                    self.draw_page(ctx).expect("Failed to draw map");
                 }
             }
-            KeyCode::Down => {
+            Some(KeyCode::Down) => {
                 self.y += STEP_Y as u32;
-                self.draw_page(ctx).expect("Failed to draw map");
             }
-            KeyCode::Key1 => {
+            Some(KeyCode::Key1) => {
                 self.mode = MapRenderMode::HeightMap;
-                self.draw_page(ctx).expect("Failed to draw map");
+                self.texture = LoadingTexture::Waiting;
             }
-            KeyCode::Key2 => {
+            Some(KeyCode::Key2) => {
                 self.mode = MapRenderMode::RadarMap;
-                self.draw_page(ctx).expect("Failed to draw map");
+                self.texture = LoadingTexture::Waiting;
             }
-            KeyCode::Key3 => {
+            Some(KeyCode::Key3) => {
                 self.mode = MapRenderMode::StaticsMap;
-                self.draw_page(ctx).expect("Failed to draw map");
+                self.texture = LoadingTexture::Waiting;
             }
-            KeyCode::Key4 => {
+            Some(KeyCode::Key4) => {
                 self.mode = MapRenderMode::FullMap;
-                self.draw_page(ctx).expect("Failed to draw map");
+                self.texture = LoadingTexture::Waiting;
             }
-            KeyCode::Tab => {
+            Some(KeyCode::Tab) => {
                 self.mode = MapRenderMode::HeightMap;
                 self.map_id = (self.map_id + 1) % MAP_DETAILS.len() as u8;
                 self.facet = map_id_to_facet(self.map_id);
-                self.draw_page(ctx).expect("Failed to draw map");
+                self.texture = LoadingTexture::Waiting;
             }
             _ => (),
         }

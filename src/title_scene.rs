@@ -1,8 +1,7 @@
-use cgmath::Point2;
-use ggez::event::{KeyCode, KeyMods};
-use ggez::graphics::{self, Text};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::graphics::{Canvas, Color, DrawParam, Text};
 use ggez::{Context, GameResult};
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 
 pub struct TitleScene {
     text: Text,
@@ -19,9 +18,10 @@ impl<'a> TitleScene {
 }
 
 impl Scene<SceneName, ()> for TitleScene {
-    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
-        graphics::draw(ctx, &self.text, (Point2::new(0.0, 0.0), graphics::WHITE))
+    fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult {
+        let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
+        canvas.draw(&self.text, DrawParam::default().color(Color::WHITE));
+        canvas.finish(ctx)
     }
 
     fn update(
@@ -35,24 +35,23 @@ impl Scene<SceneName, ()> for TitleScene {
     fn key_down_event(
         &mut self,
         _ctx: &mut Context,
-        keycode: KeyCode,
-        _keymods: KeyMods,
+        keyinput: KeyInput,
         _repeat: bool,
         _engine_data: &mut (),
     ) {
-        self.last_event = match keycode {
-            KeyCode::Escape => Some(SceneChangeEvent::PopScene),
-            KeyCode::Key1 => Some(SceneChangeEvent::PushScene(SceneName::SkillsScene)),
-            KeyCode::Key2 => Some(SceneChangeEvent::PushScene(SceneName::TileScene)),
-            KeyCode::Key3 => Some(SceneChangeEvent::PushScene(SceneName::StaticsScene)),
-            KeyCode::Key4 => Some(SceneChangeEvent::PushScene(SceneName::HuesScene)),
-            KeyCode::Key5 => Some(SceneChangeEvent::PushScene(SceneName::MapScene)),
-            KeyCode::Key6 => Some(SceneChangeEvent::PushScene(SceneName::GumpScene)),
-            KeyCode::Key7 => Some(SceneChangeEvent::PushScene(SceneName::AnimScene)),
-            KeyCode::Key8 => Some(SceneChangeEvent::PushScene(SceneName::TexMapsScene)),
-            KeyCode::Key9 => Some(SceneChangeEvent::PushScene(SceneName::WorldScene)),
-            KeyCode::Key0 => Some(SceneChangeEvent::PushScene(SceneName::FontScene)),
-            KeyCode::A => Some(SceneChangeEvent::PushScene(SceneName::MapDiffScene)),
+        self.last_event = match keyinput.keycode {
+            Some(KeyCode::Escape) => Some(SceneChangeEvent::PopScene),
+            Some(KeyCode::Key1) => Some(SceneChangeEvent::PushScene(SceneName::SkillsScene)),
+            Some(KeyCode::Key2) => Some(SceneChangeEvent::PushScene(SceneName::TileScene)),
+            Some(KeyCode::Key3) => Some(SceneChangeEvent::PushScene(SceneName::StaticsScene)),
+            Some(KeyCode::Key4) => Some(SceneChangeEvent::PushScene(SceneName::HuesScene)),
+            Some(KeyCode::Key5) => Some(SceneChangeEvent::PushScene(SceneName::MapScene)),
+            Some(KeyCode::Key6) => Some(SceneChangeEvent::PushScene(SceneName::GumpScene)),
+            Some(KeyCode::Key7) => Some(SceneChangeEvent::PushScene(SceneName::AnimScene)),
+            Some(KeyCode::Key8) => Some(SceneChangeEvent::PushScene(SceneName::TexMapsScene)),
+            Some(KeyCode::Key9) => Some(SceneChangeEvent::PushScene(SceneName::WorldScene)),
+            Some(KeyCode::Key0) => Some(SceneChangeEvent::PushScene(SceneName::FontScene)),
+            Some(KeyCode::A) => Some(SceneChangeEvent::PushScene(SceneName::MapDiffScene)),
             _ => None,
         }
     }
