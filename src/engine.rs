@@ -2,6 +2,7 @@ use ggez::event::{EventHandler, MouseButton};
 use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameError, GameResult, timer};
 
+use crate::anim_scene;
 use crate::gump_scene;
 use crate::hues_scene;
 use crate::map_scene;
@@ -11,7 +12,6 @@ use crate::statics_scene;
 use crate::tile_scene;
 use crate::title_scene;
 /*
-use anim_scene;
 use font_scene;
 use map_diff_scene;
 use texmaps_scene;
@@ -43,9 +43,9 @@ impl<'a> Engine<'a> {
             SceneName::HuesScene => hues_scene::HuesScene::new(ctx),
             SceneName::MapScene => map_scene::MapScene::new(ctx),
             SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
+            SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
             _ => panic!("OOP"), /*
                                 SceneName::TexMapsScene => texmaps_scene::TexMapsScene::new(ctx),
-                                SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
                                 SceneName::WorldScene => world_scene::WorldScene::new(),
                                 SceneName::FontScene => font_scene::FontScene::new(ctx),
                                 SceneName::MapDiffScene => map_diff_scene::MapDiffScene::new(ctx),*/

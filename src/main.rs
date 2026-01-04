@@ -5,6 +5,7 @@ mod loading_texture;
 mod map;
 mod scene;
 
+mod anim_scene;
 mod gump_scene;
 mod hues_scene;
 mod map_scene;
@@ -13,7 +14,6 @@ mod statics_scene;
 mod tile_scene;
 mod title_scene;
 /*
-mod anim_scene;
 mod font_scene;
 mod map_diff_scene;
 mod texmaps_scene;
