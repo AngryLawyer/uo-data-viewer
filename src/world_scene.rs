@@ -26,6 +26,7 @@ pub struct WorldScene {
     facet: Result<Facet>,
     x: u32,
     y: u32,
+    max_z: i8,
     map_id: u8,
     exiting: bool,
 }
@@ -40,16 +41,16 @@ fn block_at(x: i32, y: i32) -> Vec2 {
 
 impl<'a> WorldScene {
     pub fn new() -> BoxedScene<'a, SceneName, ()> {
-        let scene = Box::new(WorldScene {
+        Box::new(WorldScene {
             exiting: false,
             map_id: 0,
             facet: map_id_to_facet(0),
             art_cache: ArtCache::new(),
             texmap_cache: TexMapCache::new(),
+            max_z: 127,
             x: 160,
             y: 208,
-        });
-        scene
+        })
     }
 
     pub fn draw_page(&mut self, ctx: &mut Context) -> GameResult<()> {
@@ -66,8 +67,9 @@ impl<'a> WorldScene {
                         &mut self.texmap_cache,
                         block_details.0.as_ref(),
                         &block_details.1,
-                        &*altitudes.unwrap(),
+                        &altitudes.unwrap(),
                         transform,
+                        self.max_z
                     )?;
                 }
             }
@@ -91,27 +93,33 @@ impl Scene<SceneName, ()> for WorldScene {
         match keyinput.keycode {
             Some(KeyCode::Escape) => self.exiting = true,
             Some(KeyCode::Left) => {
-                if self.x >= STEP_X as u32 {
-                    self.x -= STEP_X as u32;
+                if self.x >= STEP_X {
+                    self.x -= STEP_X;
                 }
             }
             Some(KeyCode::Right) => {
-                self.x += STEP_X as u32;
+                self.x += STEP_X;
             }
             Some(KeyCode::Up) => {
-                if self.y >= STEP_Y as u32 {
-                    self.y -= STEP_Y as u32;
+                if self.y >= STEP_Y {
+                    self.y -= STEP_Y;
                 }
             }
             Some(KeyCode::Down) => {
-                self.y += STEP_Y as u32;
+                self.y += STEP_Y;
             }
             Some(KeyCode::Tab) => {
                 self.map_id = (self.map_id + 1) % MAP_DETAILS.len() as u8;
                 self.facet = map_id_to_facet(self.map_id);
                 self.x = 0;
                 self.y = 0;
-            }
+            },
+            Some(KeyCode::Plus) => {
+                self.max_z = self.max_z.saturating_add(1);
+            },
+            Some(KeyCode::Minus) => {
+                self.max_z = self.max_z.saturating_sub(1);
+            },
             _ => (),
         }
     }

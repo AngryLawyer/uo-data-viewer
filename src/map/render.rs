@@ -80,6 +80,7 @@ pub fn draw_block(
     statics: &[StaticLocation],
     altitudes: &AltitudeBlock,
     transform: Vec2,
+    max_z: i8
 ) -> GameResult<()> {
     for y in 0..(8 as usize) {
         for x in 0..(8 as usize) {
@@ -135,16 +136,18 @@ pub fn draw_block(
             for s in cell_statics {
                 art_cache.read_static(ctx, s.object_id as u32).as_ref().map(
                     |(art, tiledata)| {
-                        let new_transform = cell_at(x as i32, y as i32) + transform +
-                            Vec2::new(
-                                0.0,
-                                -(s.altitude as f32 * 4.0) - art.height() as f32 + TILE_SIZE,
-                            );
-                        tiles.push((
-                            DrawableItem::Static(art.clone(), tiledata.clone()),
-                            new_transform,
-                            s.altitude,
-                        ));
+                        if s.altitude <= max_z {
+                            let new_transform = cell_at(x as i32, y as i32) + transform +
+                                Vec2::new(
+                                    0.0,
+                                    -(s.altitude as f32 * 4.0) - art.height() as f32 + TILE_SIZE,
+                                );
+                            tiles.push((
+                                DrawableItem::Static(art.clone(), tiledata.clone()),
+                                new_transform,
+                                s.altitude,
+                            ));
+                        }
                     },
                 );
             }
