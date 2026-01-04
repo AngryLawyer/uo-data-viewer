@@ -1,12 +1,12 @@
+use std::io;
 use std::path::Path;
 use std::rc::Rc;
-use std::io;
 
 //pub mod render;
 use crate::caches::facet_cache::{AltitudeBlock, FacetCache};
 
-use uorustlibs::map::{Block, MapReader, StaticLocation, StaticReader};
 use uorustlibs::map::map_size::{ILSHENAR, MALAS, SOSARIA, TER_MUR, TOKUNO};
+use uorustlibs::map::{Block, MapReader, StaticLocation, StaticReader};
 
 pub fn map_id_to_facet(id: u8) -> Result<Facet, io::Error> {
     let corrected_id = if id as usize >= MAP_DETAILS.len() {
@@ -73,12 +73,23 @@ impl Facet {
     ) -> Result<Facet, io::Error> {
         let facet_cache = FacetCache::new(
             MapReader::new(map_path, width_blocks, height_blocks)?,
-            StaticReader::new(static_index, static_path, width_blocks, height_blocks)?
+            StaticReader::new(static_index, static_path, width_blocks, height_blocks)?,
         );
-        Ok (Facet { facet_cache, width_blocks, height_blocks })
+        Ok(Facet {
+            facet_cache,
+            width_blocks,
+            height_blocks,
+        })
     }
 
-    pub fn read_block(&mut self, x: u32, y: u32) -> (Rc<(Option<Block>, Vec<StaticLocation>)>, Option<Rc<AltitudeBlock>>) {
+    pub fn read_block(
+        &mut self,
+        x: u32,
+        y: u32,
+    ) -> (
+        Rc<(Option<Block>, Vec<StaticLocation>)>,
+        Option<Rc<AltitudeBlock>>,
+    ) {
         self.facet_cache.read_block(x, y)
     }
 }

@@ -1,7 +1,7 @@
-use ggez::input::keyboard::{KeyCode, KeyInput};
-use ggez::graphics::{Canvas, Color, DrawParam, Text};
-use ggez::{Context, GameResult};
 use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use ggez::graphics::{Canvas, Color, DrawParam, Text};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::{Context, GameResult};
 
 pub struct TitleScene {
     text: Text,
@@ -11,8 +11,10 @@ pub struct TitleScene {
 impl<'a> TitleScene {
     pub fn new() -> BoxedScene<'a, SceneName, ()> {
         Box::new(TitleScene {
-            text: Text::new("1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene\n8. TexMaps Scene\n9. World Scene\n0. Font Scene\nA. Map Diff Scene"),
-            last_event: None
+            text: Text::new(
+                "1. Skills Scene\n2. Tile Scene\n3. Statics Scene\n4. Hues Scene\n5. Map Scene\n6. Gump Scene\n7. Anim Scene\n8. TexMaps Scene\n9. World Scene\n0. Font Scene\nA. Map Diff Scene",
+            ),
+            last_event: None,
         })
     }
 }

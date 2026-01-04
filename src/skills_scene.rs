@@ -1,11 +1,11 @@
-use std::path::Path;
 use ggez::glam::Vec2;
+use std::path::Path;
 use uorustlibs::skills::Skills;
 
-use ggez::input::keyboard::{KeyCode, KeyInput};
-use ggez::graphics::{Canvas, Color, DrawParam, Text};
-use ggez::{Context, GameResult};
 use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use ggez::graphics::{Canvas, Color, DrawParam, Text};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::{Context, GameResult};
 
 pub struct SkillsScene {
     pages: Vec<Text>,
@@ -57,7 +57,9 @@ impl Scene<SceneName, ()> for SkillsScene {
             let width = page.measure(ctx)?.x;
             canvas.draw(
                 page,
-                DrawParam::default().dest(Vec2::new(last_width as f32, 0.0)).color(Color::WHITE)
+                DrawParam::default()
+                    .dest(Vec2::new(last_width as f32, 0.0))
+                    .color(Color::WHITE),
             );
             last_width += width as i32;
         }

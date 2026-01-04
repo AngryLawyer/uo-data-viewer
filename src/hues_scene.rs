@@ -1,9 +1,9 @@
-use ggez::input::keyboard::{KeyCode, KeyInput};
-use ggez::graphics::{Canvas, Color, DrawParam, Text, Image, Rect, ScreenImage, Quad};
-use ggez::{Context, GameResult};
-use ggez::glam::Vec2;
-use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use crate::loading_texture::LoadingTexture;
+use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use ggez::glam::Vec2;
+use ggez::graphics::{Canvas, Color, DrawParam, Image, Quad, Rect, ScreenImage, Text};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::{Context, GameResult};
 use std::fs::File;
 use std::io::Result;
 use std::path::Path;
@@ -31,9 +31,11 @@ impl<'a> HuesScene {
     }
 
     fn load_group(&mut self, ctx: &mut Context) {
-        let maybe_group = self.reader.as_mut().ok().and_then(|hue_reader| {
-            hue_reader.read_hue_group(self.index).ok()
-        });
+        let maybe_group = self
+            .reader
+            .as_mut()
+            .ok()
+            .and_then(|hue_reader| hue_reader.read_hue_group(self.index).ok());
         match maybe_group {
             Some(group) => {
                 self.texture = LoadingTexture::Loaded(self.draw_hue_group(ctx, self.index, &group));
@@ -44,19 +46,19 @@ impl<'a> HuesScene {
         };
     }
 
-    fn draw_hue_group(
-        &self,
-        ctx: &mut Context,
-        group_idx: u32,
-        group: &HueGroup,
-    ) -> Image {
+    fn draw_hue_group(&self, ctx: &mut Context, group_idx: u32, group: &HueGroup) -> Image {
         let mut img = ScreenImage::new(ctx, None, 1.0, 1.0, 1);
         let mut canvas = Canvas::from_screen_image(ctx, &mut img, Color::BLACK);
         for (idx, hue) in group.entries.iter().enumerate() {
             self.draw_hue(&mut canvas, hue, idx as u32);
         }
         let label = Text::new(format!("Group {} - {}", group_idx, group.header));
-        canvas.draw(&label, DrawParam::new().dest(Vec2::new(0.0, HEIGHT * 8.0 + 4.0)).color(Color::WHITE));
+        canvas.draw(
+            &label,
+            DrawParam::new()
+                .dest(Vec2::new(0.0, HEIGHT * 8.0 + 4.0))
+                .color(Color::WHITE),
+        );
         canvas.finish(ctx).unwrap();
         img.image(ctx)
     }
@@ -65,7 +67,13 @@ impl<'a> HuesScene {
         for (col_idx, &color) in hue.color_table.iter().enumerate() {
             let (r, g, b, _) = color.to_rgba();
             let rect = Rect::new(col_idx as f32 * 16.0, hue_idx as f32 * HEIGHT, 16.0, HEIGHT);
-            canvas.draw(&Quad, DrawParam::new().dest(rect.point()).scale(rect.size()).color(Color::from_rgba(r, g, b, 255)));
+            canvas.draw(
+                &Quad,
+                DrawParam::new()
+                    .dest(rect.point())
+                    .scale(rect.size())
+                    .color(Color::from_rgba(r, g, b, 255)),
+            );
         }
         let label_text = format!(
             "{}: {} - {}",
@@ -80,11 +88,12 @@ impl<'a> HuesScene {
         let label = Text::new(label_text);
         canvas.draw(
             &label,
-            DrawParam::new().dest(
-                Vec2::new(hue.color_table.len() as f32 * 16.0, hue_idx as f32 * HEIGHT),
-            ).color(
-                Color::WHITE,
-            ),
+            DrawParam::new()
+                .dest(Vec2::new(
+                    hue.color_table.len() as f32 * 16.0,
+                    hue_idx as f32 * HEIGHT,
+                ))
+                .color(Color::WHITE),
         );
     }
 }
@@ -95,10 +104,10 @@ impl Scene<SceneName, ()> for HuesScene {
         match self.texture {
             LoadingTexture::Waiting => {
                 self.load_group(ctx);
-            },
+            }
             LoadingTexture::Loaded(ref texture) => {
                 canvas.draw(texture, DrawParam::default());
-            },
+            }
             LoadingTexture::Failed => (),
         }
         canvas.finish(ctx)

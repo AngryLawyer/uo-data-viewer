@@ -1,18 +1,18 @@
 use ggez::event::{EventHandler, MouseButton};
 use ggez::input::keyboard::KeyInput;
-use ggez::{timer, Context, GameError, GameResult};
+use ggez::{Context, GameError, GameResult, timer};
 
-use crate::scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
-use crate::title_scene;
-use crate::skills_scene;
-use crate::tile_scene;
-use crate::statics_scene;
+use crate::gump_scene;
 use crate::hues_scene;
 use crate::map_scene;
+use crate::scene::{BoxedScene, SceneChangeEvent, SceneName, SceneStack};
+use crate::skills_scene;
+use crate::statics_scene;
+use crate::tile_scene;
+use crate::title_scene;
 /*
 use anim_scene;
 use font_scene;
-use gump_scene;
 use map_diff_scene;
 use texmaps_scene;
 use world_scene;*/
@@ -42,14 +42,13 @@ impl<'a> Engine<'a> {
             SceneName::StaticsScene => statics_scene::StaticsScene::new(ctx),
             SceneName::HuesScene => hues_scene::HuesScene::new(ctx),
             SceneName::MapScene => map_scene::MapScene::new(ctx),
-            _ => panic!("OOP")
-            /*
-            SceneName::TexMapsScene => texmaps_scene::TexMapsScene::new(ctx),
             SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
-            SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
-            SceneName::WorldScene => world_scene::WorldScene::new(),
-            SceneName::FontScene => font_scene::FontScene::new(ctx),
-            SceneName::MapDiffScene => map_diff_scene::MapDiffScene::new(ctx),*/
+            _ => panic!("OOP"), /*
+                                SceneName::TexMapsScene => texmaps_scene::TexMapsScene::new(ctx),
+                                SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
+                                SceneName::WorldScene => world_scene::WorldScene::new(),
+                                SceneName::FontScene => font_scene::FontScene::new(ctx),
+                                SceneName::MapDiffScene => map_diff_scene::MapDiffScene::new(ctx),*/
         }
     }
 }
@@ -105,7 +104,13 @@ impl<'a> EventHandler for Engine<'a> {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) -> GameResult {
+    fn mouse_button_down_event(
+        &mut self,
+        ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
+    ) -> GameResult {
         let mut scene_stack = self.scene_stack.take().expect("Empty scene stack");
         scene_stack.mouse_button_down_event(ctx, button, x, y, &mut ());
         self.scene_stack = Some(scene_stack);

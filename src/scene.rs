@@ -1,5 +1,5 @@
-use ggez::input::keyboard::KeyInput;
 use ggez::event::MouseButton;
+use ggez::input::keyboard::KeyInput;
 use ggez::{Context, GameResult};
 
 #[derive(Debug, Copy, Clone)]

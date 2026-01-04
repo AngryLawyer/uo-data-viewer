@@ -101,14 +101,25 @@ impl FacetCache {
             let (block_x2, _) = *self.read_block_cache(x + 1, y);
             let (block_y2, _) = *self.read_block_cache(x, y + 1);
             let (block_x2y2, _) = *self.read_block_cache(x + 1, y + 1);
-            let collector =
-                read_altitudes(&block?, block_x2.as_ref(), block_y2.as_ref(), block_x2y2.as_ref());
+            let collector = read_altitudes(
+                &block?,
+                block_x2.as_ref(),
+                block_y2.as_ref(),
+                block_x2y2.as_ref(),
+            );
             self.height_cache.insert((x, y), Rc::new(collector));
         }
         self.height_cache.get(&(x, y)).cloned()
     }
 
-    pub fn read_block(&mut self, x: u32, y: u32) -> (Rc<(Option<Block>, Vec<StaticLocation>)>, Option<Rc<AltitudeBlock>>) {
+    pub fn read_block(
+        &mut self,
+        x: u32,
+        y: u32,
+    ) -> (
+        Rc<(Option<Block>, Vec<StaticLocation>)>,
+        Option<Rc<AltitudeBlock>>,
+    ) {
         let block = self.read_block_cache(x, y);
         let altitudes = self.read_altitudes(x, y);
         (block, altitudes)

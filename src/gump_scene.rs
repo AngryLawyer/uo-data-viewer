@@ -1,114 +1,122 @@
-use cgmath::Point2;
-use ggez::event::{KeyCode, KeyMods};
-use ggez::graphics::{self, Canvas, DrawParam, Text};
+use crate::image_convert::image_to_surface;
+use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use ggez::glam::Vec2;
+use ggez::graphics::{Canvas, Color, DrawParam, Image, ScreenImage, Text};
+use ggez::input::keyboard::{KeyCode, KeyInput};
 use ggez::{Context, GameResult};
-use image_convert::image_to_surface;
-use scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
 use std::fs::File;
 use std::io::Result;
 use std::path::Path;
-use uorustlibs::gump::GumpReader;
+use uorustlibs::gump::{Gump, GumpReader};
 
 pub struct GumpScene {
     reader: Result<GumpReader<File>>,
     index: u32,
-    texture: Option<Canvas>,
+    current_gump: Option<Gump>,
+    texture: Option<Image>,
     exiting: bool,
 }
 
 impl<'a> GumpScene {
     pub fn new(ctx: &mut Context) -> BoxedScene<'a, SceneName, ()> {
-        let reader = GumpReader::new(
+        let mut reader = GumpReader::new(
             &Path::new("./assets/gumpidx.mul"),
             &Path::new("./assets/gumpart.mul"),
         );
+        let current_gump = if let Ok(ref mut r) = reader {
+            r.read_gump(0).ok()
+        } else {
+            None
+        };
         let mut scene = Box::new(GumpScene {
-            reader: reader,
+            reader,
             index: 0,
+            current_gump,
             texture: None,
             exiting: false,
         });
-        scene.create_slice(ctx).expect("Failed to create slice");
         scene
     }
 
     fn cycle_backward(&mut self) {
-        match self.reader {
-            Ok(ref mut reader) => {
-                while self.index > 0 {
-                    self.index -= 1;
-                    match reader.read_gump(self.index) {
-                        Ok(_) => {
-                            break;
-                        }
-                        _ => {}
-                    }
+        if let Ok(ref mut reader) = self.reader {
+            while self.index > 0 {
+                self.index -= 1;
+                if let Ok(g) = reader.read_gump(self.index) {
+                    self.current_gump = Some(g);
+                    self.texture = None;
+                    break;
                 }
             }
-            _ => {}
         }
     }
 
     fn cycle_forward(&mut self) {
-        match self.reader {
-            Ok(ref mut reader) => loop {
+        if let Ok(ref mut reader) = self.reader {
+            loop {
                 self.index += 1;
-                match reader.read_gump(self.index) {
-                    Ok(_) => {
-                        break;
-                    }
-                    _ => {}
+                if let Ok(g) = reader.read_gump(self.index) {
+                    self.current_gump = Some(g);
+                    self.texture = None;
+                    break;
                 }
-            },
-            _ => {}
+            }
         }
     }
 
     fn create_slice(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let dest = Canvas::with_window_size(ctx)?;
-        graphics::set_canvas(ctx, Some(&dest));
-        graphics::clear(ctx, graphics::BLACK);
+        let mut img = ScreenImage::new(ctx, None, 1.0, 1.0, 1);
+        let mut dest = Canvas::from_screen_image(ctx, &mut img, Color::BLACK);
         match self.reader {
             Ok(ref mut reader) => match reader.read_gump(self.index) {
                 Ok(gump) => {
                     let image = gump.to_image();
                     let surface = image_to_surface(ctx, &image);
-                    graphics::draw(ctx, &surface, DrawParam::default())?;
+                    dest.draw(&surface, DrawParam::default());
                     let label = Text::new(format!("{}", self.index));
-                    graphics::draw(
-                        ctx,
+                    dest.draw(
                         &label,
-                        (
-                            Point2::new(9.0, surface.height() as f32 + 16.0),
-                            graphics::WHITE,
-                        ),
-                    )?;
+                        DrawParam::default()
+                            .dest(Vec2::new(9.0, surface.height() as f32 + 16.0))
+                            .color(Color::WHITE),
+                    );
                 }
                 _ => {
                     let label = Text::new(format!("Invalid gump {}", self.index));
-                    graphics::draw(ctx, &label, (Point2::new(9.0, 16.0), graphics::WHITE))?;
+                    dest.draw(
+                        &label,
+                        DrawParam::default()
+                            .dest(Vec2::new(9.0, 16.0))
+                            .color(Color::WHITE),
+                    );
                 }
             },
             _ => {
                 let text = Text::new("Could not create slice");
-                graphics::draw(ctx, &text, (Point2::new(0.0, 0.0), graphics::WHITE))?;
+                dest.draw(
+                    &text,
+                    DrawParam::default()
+                        .dest(Vec2::new(0.0, 0.0))
+                        .color(Color::WHITE),
+                );
             }
         }
-        graphics::set_canvas(ctx, None);
-        self.texture = Some(dest);
+        dest.finish(ctx)?;
+        self.texture = Some(img.image(ctx));
         Ok(())
     }
 }
 
 impl Scene<SceneName, ()> for GumpScene {
     fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
-        match self.texture {
-            Some(ref texture) => {
-                graphics::draw(ctx, texture, DrawParam::default())?;
-            }
-            None => (),
-        };
-        Ok(())
+        let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
+        if self.texture.is_none() {
+            self.create_slice(ctx)?;
+        }
+        if let Some(ref texture) = self.texture {
+            canvas.draw(texture, DrawParam::default());
+        }
+        canvas.finish(ctx)
     }
 
     fn update(
@@ -126,20 +134,17 @@ impl Scene<SceneName, ()> for GumpScene {
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
-        keycode: KeyCode,
-        _keymods: KeyMods,
+        keyinput: KeyInput,
         _repeat: bool,
         _engine_data: &mut (),
     ) {
-        match keycode {
-            KeyCode::Escape => self.exiting = true,
-            KeyCode::Left => {
+        match keyinput.keycode {
+            Some(KeyCode::Escape) => self.exiting = true,
+            Some(KeyCode::Left) => {
                 self.cycle_backward();
-                self.create_slice(ctx).expect("Failed to create slice");
             }
-            KeyCode::Right => {
+            Some(KeyCode::Right) => {
                 self.cycle_forward();
-                self.create_slice(ctx).expect("Failed to create slice");
             }
             _ => (),
         }

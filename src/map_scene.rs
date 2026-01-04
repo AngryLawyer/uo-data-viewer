@@ -1,13 +1,13 @@
-use ggez::input::keyboard::{KeyCode, KeyInput};
-use ggez::graphics::{Canvas, Color, DrawParam, Image, ImageFormat, ScreenImage};
-use ggez::{Context, GameResult};
-use ggez::glam::Vec2;
-use image::math::Rect;
 use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
+use ggez::glam::Vec2;
+use ggez::graphics::{Canvas, Color, DrawParam, Image, ImageFormat, ScreenImage};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::{Context, GameResult};
+use image::math::Rect;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::map::{map_id_to_facet, Facet, MAP_DETAILS};
+use crate::map::{Facet, MAP_DETAILS, map_id_to_facet};
 use uorustlibs::color::{Color as ColorTrait, Color16};
 use uorustlibs::map::{Block, RadarColReader, StaticLocation};
 
@@ -134,16 +134,16 @@ impl<'a> MapScene {
         // Screen only ever moves in something divisible by 8
         let pixel_x = x * 8;
         let pixel_y = y * 8;
-        pixel_x >= screen_bounds.x &&
-            pixel_x <= (screen_bounds.x + screen_bounds.width + 8) &&
-            pixel_y >= screen_bounds.y &&
-            pixel_y <= (screen_bounds.y + screen_bounds.height + 8)
+        pixel_x >= screen_bounds.x
+            && pixel_x <= (screen_bounds.x + screen_bounds.width + 8)
+            && pixel_y >= screen_bounds.y
+            && pixel_y <= (screen_bounds.y + screen_bounds.height + 8)
     }
 
     pub fn draw_page(&mut self, ctx: &mut Context) -> GameResult<()> {
         let mut screen_canvas = Canvas::from_frame(ctx, Color::BLACK);
         if self.facet.is_none() {
-            return screen_canvas.finish(ctx)
+            return screen_canvas.finish(ctx);
         }
 
         let (screen_width, screen_height) = ctx.gfx.drawable_size();
@@ -151,7 +151,7 @@ impl<'a> MapScene {
             x: self.x * 8,
             y: self.y * 8,
             width: screen_width as u32,
-            height: screen_height as u32
+            height: screen_height as u32,
         };
 
         let block_drawer = match self.mode {
@@ -162,28 +162,38 @@ impl<'a> MapScene {
         };
         for y in 0..(screen_bounds.height / 8) {
             for x in 0..(screen_bounds.width / 8) {
-                let block_surface = self.rendered_blocks.entry((x + self.x, y + self.y)).or_insert_with(|| {
-                    let mut img = ScreenImage::new(
-                        ctx,
-                        None,
-                        8.0 / screen_bounds.width as f32,
-                        8.0 / screen_bounds.height as f32,
-                        1
-                    );
-                    let mut canvas = Canvas::from_screen_image(ctx, &mut img, Color::BLACK);
-                    let (block_data, _) = self.facet.as_mut().unwrap().read_block(x + self.x, y + self.y);
-                    let mut bitmap = [0; 8 * 8 * 4];
-                    if block_data.0.is_some() {
-                        block_drawer(&mut bitmap, &block_data.0.unwrap(), &block_data.1, self.radar_colors.as_deref());
-                    }
-                    let block_surface = Image::from_pixels(ctx, &bitmap, ImageFormat::Rgba8Unorm, 8, 8);
-                    canvas.draw(
-                        &block_surface,
-                        DrawParam::default(),
-                    );
-                    canvas.finish(ctx).unwrap(); // FIXME: This could blow up
-                    img.image(ctx)
-                });
+                let block_surface = self
+                    .rendered_blocks
+                    .entry((x + self.x, y + self.y))
+                    .or_insert_with(|| {
+                        let mut img = ScreenImage::new(
+                            ctx,
+                            None,
+                            8.0 / screen_bounds.width as f32,
+                            8.0 / screen_bounds.height as f32,
+                            1,
+                        );
+                        let mut canvas = Canvas::from_screen_image(ctx, &mut img, Color::BLACK);
+                        let (block_data, _) = self
+                            .facet
+                            .as_mut()
+                            .unwrap()
+                            .read_block(x + self.x, y + self.y);
+                        let mut bitmap = [0; 8 * 8 * 4];
+                        if block_data.0.is_some() {
+                            block_drawer(
+                                &mut bitmap,
+                                &block_data.0.unwrap(),
+                                &block_data.1,
+                                self.radar_colors.as_deref(),
+                            );
+                        }
+                        let block_surface =
+                            Image::from_pixels(ctx, &bitmap, ImageFormat::Rgba8Unorm, 8, 8);
+                        canvas.draw(&block_surface, DrawParam::default());
+                        canvas.finish(ctx).unwrap(); // FIXME: This could blow up
+                        img.image(ctx)
+                    });
                 screen_canvas.draw(
                     block_surface,
                     DrawParam::default().dest(Vec2::new(x as f32 * 8.0, y as f32 * 8.0)),
