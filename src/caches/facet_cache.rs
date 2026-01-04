@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Result;
-use std::path::Path;
+use std::rc::Rc;
 
-use uorustlibs::map::{Block, Cell, MapReader, StaticLocation, StaticReader};
+use uorustlibs::map::{Block, MapReader, StaticLocation, StaticReader};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Altitudes {
     pub x1y1: i8,
     pub x2y1: i8,
@@ -13,11 +12,13 @@ pub struct Altitudes {
     pub x2y2: i8,
 }
 
+pub type AltitudeBlock = [[Altitudes; 8]; 8];
+
 pub struct FacetCache {
     map_reader: MapReader,
     static_reader: StaticReader<File>,
-    block_cache: HashMap<(u32, u32), (Block, Vec<StaticLocation>)>,
-    height_cache: HashMap<(u32, u32), Vec<Altitudes>>,
+    block_cache: HashMap<(u32, u32), Rc<(Option<Block>, Vec<StaticLocation>)>>,
+    height_cache: HashMap<(u32, u32), Rc<AltitudeBlock>>,
 }
 
 pub fn read_altitudes(
@@ -25,8 +26,8 @@ pub fn read_altitudes(
     block_x2y1: Option<&Block>,
     block_x1y2: Option<&Block>,
     block_x2y2: Option<&Block>,
-) -> Vec<Altitudes> {
-    let mut collector = vec![];
+) -> AltitudeBlock {
+    let mut collector = [[Altitudes::default(); 8]; 8];
     for y in 0..8 {
         for x in 0..8 {
             let cell = block_x1y1.cells[y * 8 + x];
@@ -61,12 +62,12 @@ pub fn read_altitudes(
             } else {
                 block_x1y1.cells[(y + 1) * 8 + x + 1].altitude
             };
-            collector.push(Altitudes {
+            collector[x][y] = Altitudes {
                 x1y1,
                 x2y1,
                 x1y2,
                 x2y2,
-            });
+            };
         }
     }
     collector
@@ -82,35 +83,34 @@ impl FacetCache {
         }
     }
 
-    fn read_block_cache(&mut self, x: u32, y: u32) -> &(Block, Vec<StaticLocation>) {
-        if (!self.block_cache.contains_key(&(x, y))) {
+    fn read_block_cache(&mut self, x: u32, y: u32) -> Rc<(Option<Block>, Vec<StaticLocation>)> {
+        if !self.block_cache.contains_key(&(x, y)) {
             let block = self.map_reader.read_block_from_coordinates(x, y, None);
             let statics = self.static_reader.read_block_from_coordinates(x, y, None);
             self.block_cache.insert(
                 (x, y),
-                (block.ok().unwrap(), statics.ok().unwrap_or(vec![])),
-            ); // FIXME: Out of bounds errors
+                Rc::new((block.ok(), statics.ok().unwrap_or(vec![]))),
+            );
         }
-        self.block_cache.get(&(x, y)).unwrap()
+        self.block_cache.get(&(x, y)).unwrap().clone()
     }
 
-    fn read_altitudes(&mut self, x: u32, y: u32) -> &Vec<Altitudes> {
-        if (!self.height_cache.contains_key(&(x, y))) {
-            let (block, _) = self.read_block_cache(x, y).clone(); // FIXME: Do this without clones
-            let (block_x2, _) = self.read_block_cache(x + 1, y).clone();
-            let (block_y2, _) = self.read_block_cache(x, y + 1).clone();
-            let (block_x2y2, _) = self.read_block_cache(x + 1, y + 1).clone();
+    fn read_altitudes(&mut self, x: u32, y: u32) -> Option<Rc<AltitudeBlock>> {
+        if !self.height_cache.contains_key(&(x, y)) {
+            let (block, _) = *self.read_block_cache(x, y);
+            let (block_x2, _) = *self.read_block_cache(x + 1, y);
+            let (block_y2, _) = *self.read_block_cache(x, y + 1);
+            let (block_x2y2, _) = *self.read_block_cache(x + 1, y + 1);
             let collector =
-                read_altitudes(&block, Some(&block_x2), Some(&block_y2), Some(&block_x2y2));
-            self.height_cache.insert((x, y), collector);
+                read_altitudes(&block?, block_x2.as_ref(), block_y2.as_ref(), block_x2y2.as_ref());
+            self.height_cache.insert((x, y), Rc::new(collector));
         }
-        self.height_cache.get(&(x, y)).unwrap()
+        self.height_cache.get(&(x, y)).cloned()
     }
 
-    pub fn read_block(&mut self, x: u32, y: u32) -> ((Block, Vec<StaticLocation>), Vec<Altitudes>) {
-        // FIXME: Sort out mutable borrows
-        let block = self.read_block_cache(x, y).clone();
-        let altitudes = self.read_altitudes(x, y).to_vec();
+    pub fn read_block(&mut self, x: u32, y: u32) -> (Rc<(Option<Block>, Vec<StaticLocation>)>, Option<Rc<AltitudeBlock>>) {
+        let block = self.read_block_cache(x, y);
+        let altitudes = self.read_altitudes(x, y);
         (block, altitudes)
     }
 }

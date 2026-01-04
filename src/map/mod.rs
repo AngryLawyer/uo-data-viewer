@@ -1,13 +1,14 @@
 use std::path::Path;
+use std::rc::Rc;
+use std::io;
 
 //pub mod render;
+use crate::caches::facet_cache::{AltitudeBlock, FacetCache};
 
 use uorustlibs::map::{Block, MapReader, StaticLocation, StaticReader};
-
-use crate::caches::facet_cache::{Altitudes, FacetCache};
 use uorustlibs::map::map_size::{ILSHENAR, MALAS, SOSARIA, TER_MUR, TOKUNO};
 
-pub fn map_id_to_facet(id: u8) -> Facet {
+pub fn map_id_to_facet(id: u8) -> Result<Facet, io::Error> {
     let corrected_id = if id as usize >= MAP_DETAILS.len() {
         0
     } else {
@@ -15,15 +16,15 @@ pub fn map_id_to_facet(id: u8) -> Facet {
     };
     let (map, idx, statics, (width, height)) = MAP_DETAILS[corrected_id];
     Facet::new(
-        &Path::new(map),
-        &Path::new(idx),
-        &Path::new(statics),
+        Path::new(map),
+        Path::new(idx),
+        Path::new(statics),
         width / 8,
         height / 8,
     )
 }
 
-pub const MAP_DETAILS: [(&'static str, &'static str, &'static str, (u32, u32)); 5] = [
+pub const MAP_DETAILS: [(&str, &str, &str, (u32, u32)); 5] = [
     (
         "./assets/map0.mul",
         "./assets/staidx0.mul",
@@ -69,15 +70,15 @@ impl Facet {
         static_path: &Path,
         width_blocks: u32,
         height_blocks: u32,
-    ) -> Facet {
+    ) -> Result<Facet, io::Error> {
         let facet_cache = FacetCache::new(
-            MapReader::new(map_path, width_blocks, height_blocks).unwrap(),
-            StaticReader::new(static_index, static_path, width_blocks, height_blocks).unwrap(),
+            MapReader::new(map_path, width_blocks, height_blocks)?,
+            StaticReader::new(static_index, static_path, width_blocks, height_blocks)?
         );
-        Facet { facet_cache, width_blocks, height_blocks }
+        Ok (Facet { facet_cache, width_blocks, height_blocks })
     }
 
-    pub fn read_block(&mut self, x: u32, y: u32) -> ((Block, Vec<StaticLocation>), Vec<Altitudes>) {
+    pub fn read_block(&mut self, x: u32, y: u32) -> (Rc<(Option<Block>, Vec<StaticLocation>)>, Option<Rc<AltitudeBlock>>) {
         self.facet_cache.read_block(x, y)
     }
 }

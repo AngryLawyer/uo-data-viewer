@@ -1,12 +1,10 @@
 use ggez::input::keyboard::{KeyCode, KeyInput};
-use ggez::graphics::{Canvas, Color, DrawParam, Image, ImageFormat, ScreenImage, Text};
+use ggez::graphics::{Canvas, Color, DrawParam, Image, ImageFormat, ScreenImage};
 use ggez::{Context, GameResult};
 use ggez::glam::Vec2;
-use crate::image_convert::image_to_surface;
-use crate::loading_texture::LoadingTexture;
+use image::math::Rect;
 use crate::scene::{BoxedScene, Scene, SceneChangeEvent, SceneName};
-use std::fs::File;
-use std::io::Result;
+use std::collections::HashMap;
 use std::path::Path;
 
 use crate::map::{map_id_to_facet, Facet, MAP_DETAILS};
@@ -19,28 +17,28 @@ const STEP_X: u32 = MAX_BLOCKS_WIDTH / 4;
 const STEP_Y: u32 = MAX_BLOCKS_HEIGHT / 4;
 
 enum MapRenderMode {
-    HeightMap,
-    RadarMap,
-    StaticsMap,
-    FullMap,
+    Height,
+    Radar,
+    Statics,
+    Full,
 }
 
 pub struct MapScene {
-    facet: Facet,
+    facet: Option<Facet>,
     map_id: u8,
-    radar_colors: Result<Vec<Color16>>,
+    radar_colors: Option<Vec<Color16>>,
     mode: MapRenderMode,
-    texture: LoadingTexture,
+    rendered_blocks: HashMap<(u32, u32), Image>,
     exiting: bool,
     x: u32,
     y: u32,
 }
 
 pub fn draw_heightmap_block(
-    bitmap: &mut Vec<u8>,
+    bitmap: &mut [u8; 4 * 8 * 8],
     block: &Block,
-    _statics: &Vec<StaticLocation>,
-    _radar_cols: &Result<Vec<Color16>>,
+    _statics: &[StaticLocation],
+    _radar_cols: Option<&[Color16]>,
 ) {
     for y in 0..8 {
         for x in 0..8 {
@@ -55,17 +53,17 @@ pub fn draw_heightmap_block(
 }
 
 pub fn draw_radarcol_block(
-    bitmap: &mut Vec<u8>,
+    bitmap: &mut [u8; 4 * 8 * 8],
     block: &Block,
-    _statics: &Vec<StaticLocation>,
-    radar_cols: &Result<Vec<Color16>>,
+    _statics: &[StaticLocation],
+    radar_cols: Option<&[Color16]>,
 ) {
     for y in 0..8 {
         for x in 0..8 {
             let target = x + (y * 8);
             let index = block.cells[target].graphic;
             let (r, g, b, _) = match radar_cols {
-                &Ok(ref colors) => colors[index as usize].to_rgba(),
+                Some(colors) => colors[index as usize].to_rgba(),
                 _ => index.to_rgba(),
             };
             bitmap[target * 4] = r;
@@ -77,19 +75,19 @@ pub fn draw_radarcol_block(
 }
 
 pub fn draw_statics_block(
-    bitmap: &mut Vec<u8>,
+    bitmap: &mut [u8; 4 * 8 * 8],
     _block: &Block,
-    statics: &Vec<StaticLocation>,
-    radar_cols: &Result<Vec<Color16>>,
+    statics: &[StaticLocation],
+    radar_cols: Option<&[Color16]>,
 ) {
-    let mut last_height_locs = vec![-127; 64];
+    let mut last_height_locs = [-127; 64];
     for stat in statics {
         let lookup = (stat.x + (stat.y * 8)) as usize;
         if last_height_locs[lookup] < stat.altitude {
             // Paint the cell as we're higher.
             // Inefficient, but probably no worse than trying to keep track of which items are in which cell
             let (r, g, b, _) = match radar_cols {
-                &Ok(ref colors) => colors[stat.color_idx() as usize].to_rgba(),
+                Some(colors) => colors[stat.color_idx() as usize].to_rgba(),
                 _ => (0, 0, 0, 0),
             };
             bitmap[lookup * 4] = r;
@@ -103,10 +101,10 @@ pub fn draw_statics_block(
 }
 
 pub fn draw_full_block(
-    bitmap: &mut Vec<u8>,
+    bitmap: &mut [u8; 4 * 8 * 8],
     block: &Block,
-    statics: &Vec<StaticLocation>,
-    radar_cols: &Result<Vec<Color16>>,
+    statics: &[StaticLocation],
+    radar_cols: Option<&[Color16]>,
 ) {
     draw_radarcol_block(bitmap, block, statics, radar_cols);
     draw_statics_block(bitmap, block, statics, radar_cols);
@@ -115,13 +113,14 @@ pub fn draw_full_block(
 impl<'a> MapScene {
     pub fn new(ctx: &mut Context) -> BoxedScene<'a, SceneName, ()> {
         let colors = RadarColReader::new(&Path::new("./assets/radarcol.mul"))
-            .and_then(|mut reader| reader.read_colors());
+            .and_then(|mut reader| reader.read_colors())
+            .ok();
 
-        let mut scene = Box::new(MapScene {
-            facet: map_id_to_facet(0),
+        let scene = Box::new(MapScene {
+            facet: map_id_to_facet(0).ok(),
             map_id: 0,
-            texture: LoadingTexture::Waiting,
-            mode: MapRenderMode::HeightMap,
+            rendered_blocks: HashMap::new(),
+            mode: MapRenderMode::Full,
             radar_colors: colors,
             exiting: false,
             x: 0,
@@ -131,51 +130,73 @@ impl<'a> MapScene {
         scene
     }
 
+    fn block_in_bounds(&self, x: u32, y: u32, screen_bounds: Rect) -> bool {
+        // Screen only ever moves in something divisible by 8
+        let pixel_x = x * 8;
+        let pixel_y = y * 8;
+        pixel_x >= screen_bounds.x &&
+            pixel_x <= (screen_bounds.x + screen_bounds.width + 8) &&
+            pixel_y >= screen_bounds.y &&
+            pixel_y <= (screen_bounds.y + screen_bounds.height + 8)
+    }
+
     pub fn draw_page(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut img = ScreenImage::new(ctx, None, 1.0, 1.0, 1);
-        let mut canvas = Canvas::from_screen_image(ctx, &mut img, Color::BLACK);
+        let mut screen_canvas = Canvas::from_frame(ctx, Color::BLACK);
+        if self.facet.is_none() {
+            return screen_canvas.finish(ctx)
+        }
+
+        let (screen_width, screen_height) = ctx.gfx.drawable_size();
+        let screen_bounds = Rect {
+            x: self.x * 8,
+            y: self.y * 8,
+            width: screen_width as u32,
+            height: screen_height as u32
+        };
 
         let block_drawer = match self.mode {
-            MapRenderMode::HeightMap => draw_heightmap_block,
-            MapRenderMode::RadarMap => draw_radarcol_block,
-            MapRenderMode::StaticsMap => draw_statics_block,
-            MapRenderMode::FullMap => draw_full_block,
+            MapRenderMode::Height => draw_heightmap_block,
+            MapRenderMode::Radar => draw_radarcol_block,
+            MapRenderMode::Statics => draw_statics_block,
+            MapRenderMode::Full => draw_full_block,
         };
-        // TODO: Lazy loading, save block images
-        for y in 0..self.facet.height_blocks {
-            for x in 0..self.facet.width_blocks {
-                match self.facet.read_block(x + self.x, y + self.y) {
-                    ((ref block, ref statics), _) => {
-                        let mut bitmap = vec![0; 8 * 8 * 4];
-                        block_drawer(&mut bitmap, block, statics, &self.radar_colors);
-                        let block_surface = Image::from_pixels(ctx, &bitmap, ImageFormat::Rgba8Unorm, 8, 8);
-                        canvas.draw(
-                            &block_surface,
-                            DrawParam::default().dest(Vec2::new(x as f32 * 8.0, y as f32 * 8.0)),
-                        );
+        for y in 0..(screen_bounds.height / 8) {
+            for x in 0..(screen_bounds.width / 8) {
+                let block_surface = self.rendered_blocks.entry((x + self.x, y + self.y)).or_insert_with(|| {
+                    let mut img = ScreenImage::new(
+                        ctx,
+                        None,
+                        8.0 / screen_bounds.width as f32,
+                        8.0 / screen_bounds.height as f32,
+                        1
+                    );
+                    let mut canvas = Canvas::from_screen_image(ctx, &mut img, Color::BLACK);
+                    let (block_data, _) = self.facet.as_mut().unwrap().read_block(x + self.x, y + self.y);
+                    let mut bitmap = [0; 8 * 8 * 4];
+                    if block_data.0.is_some() {
+                        block_drawer(&mut bitmap, &block_data.0.unwrap(), &block_data.1, self.radar_colors.as_deref());
                     }
-                }
+                    let block_surface = Image::from_pixels(ctx, &bitmap, ImageFormat::Rgba8Unorm, 8, 8);
+                    canvas.draw(
+                        &block_surface,
+                        DrawParam::default(),
+                    );
+                    canvas.finish(ctx).unwrap(); // FIXME: This could blow up
+                    img.image(ctx)
+                });
+                screen_canvas.draw(
+                    block_surface,
+                    DrawParam::default().dest(Vec2::new(x as f32 * 8.0, y as f32 * 8.0)),
+                );
             }
         }
-        canvas.finish(ctx)?;
-        self.texture = LoadingTexture::Loaded(img.image(ctx));
-        Ok(())
+        screen_canvas.finish(ctx)
     }
 }
 
 impl Scene<SceneName, ()> for MapScene {
     fn draw(&mut self, ctx: &mut Context, _engine_data: &mut ()) -> GameResult<()> {
-        let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
-        match self.texture {
-            LoadingTexture::Waiting => {
-                self.draw_page(ctx)?;
-            },
-            LoadingTexture::Loaded(ref texture) => {
-                canvas.draw(texture, DrawParam::default());
-            },
-            LoadingTexture::Failed => (),
-        }
-        canvas.finish(ctx)
+        self.draw_page(ctx)
     }
 
     fn update(
@@ -200,42 +221,41 @@ impl Scene<SceneName, ()> for MapScene {
         match keyinput.keycode {
             Some(KeyCode::Escape) => self.exiting = true,
             Some(KeyCode::Left) => {
-                if self.x >= STEP_X as u32 {
-                    self.x -= STEP_X as u32;
+                if self.x >= STEP_X {
+                    self.x -= STEP_X;
                 }
             }
             Some(KeyCode::Right) => {
-                self.x += STEP_X as u32;
+                self.x += STEP_X;
             }
             Some(KeyCode::Up) => {
-                if self.y >= STEP_Y as u32 {
-                    self.y -= STEP_Y as u32;
+                if self.y >= STEP_Y {
+                    self.y -= STEP_Y;
                 }
             }
             Some(KeyCode::Down) => {
-                self.y += STEP_Y as u32;
+                self.y += STEP_Y;
             }
             Some(KeyCode::Key1) => {
-                self.mode = MapRenderMode::HeightMap;
-                self.texture = LoadingTexture::Waiting;
+                self.mode = MapRenderMode::Height;
+                self.rendered_blocks.clear();
             }
             Some(KeyCode::Key2) => {
-                self.mode = MapRenderMode::RadarMap;
-                self.texture = LoadingTexture::Waiting;
+                self.mode = MapRenderMode::Radar;
+                self.rendered_blocks.clear();
             }
             Some(KeyCode::Key3) => {
-                self.mode = MapRenderMode::StaticsMap;
-                self.texture = LoadingTexture::Waiting;
+                self.mode = MapRenderMode::Statics;
+                self.rendered_blocks.clear();
             }
             Some(KeyCode::Key4) => {
-                self.mode = MapRenderMode::FullMap;
-                self.texture = LoadingTexture::Waiting;
+                self.mode = MapRenderMode::Full;
+                self.rendered_blocks.clear();
             }
             Some(KeyCode::Tab) => {
-                self.mode = MapRenderMode::HeightMap;
                 self.map_id = (self.map_id + 1) % MAP_DETAILS.len() as u8;
-                self.facet = map_id_to_facet(self.map_id);
-                self.texture = LoadingTexture::Waiting;
+                self.facet = map_id_to_facet(self.map_id).ok();
+                self.rendered_blocks.clear();
             }
             _ => (),
         }
