@@ -2,7 +2,7 @@ use std::io;
 use std::path::Path;
 use std::rc::Rc;
 
-//pub mod render;
+pub mod render;
 use crate::caches::facet_cache::{AltitudeBlock, FacetCache};
 
 use uorustlibs::map::map_size::{ILSHENAR, MALAS, SOSARIA, TER_MUR, TOKUNO};

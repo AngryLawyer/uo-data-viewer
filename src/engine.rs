@@ -15,7 +15,8 @@ use crate::title_scene;
 use font_scene;
 use map_diff_scene;
 use texmaps_scene;
-use world_scene;*/
+*/
+use crate::world_scene;
 
 pub struct Engine<'a> {
     scene_stack: Option<SceneStack<'a, SceneName, ()>>,
@@ -44,9 +45,9 @@ impl<'a> Engine<'a> {
             SceneName::MapScene => map_scene::MapScene::new(ctx),
             SceneName::GumpScene => gump_scene::GumpScene::new(ctx),
             SceneName::AnimScene => anim_scene::AnimScene::new(ctx),
+            SceneName::WorldScene => world_scene::WorldScene::new(),
             _ => panic!("OOP"), /*
                                 SceneName::TexMapsScene => texmaps_scene::TexMapsScene::new(ctx),
-                                SceneName::WorldScene => world_scene::WorldScene::new(),
                                 SceneName::FontScene => font_scene::FontScene::new(ctx),
                                 SceneName::MapDiffScene => map_diff_scene::MapDiffScene::new(ctx),*/
         }

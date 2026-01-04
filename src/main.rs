@@ -17,7 +17,8 @@ mod title_scene;
 mod font_scene;
 mod map_diff_scene;
 mod texmaps_scene;
-mod world_scene;*/
+*/
+mod world_scene;
 
 use ggez::ContextBuilder;
 use ggez::conf::WindowSetup;
